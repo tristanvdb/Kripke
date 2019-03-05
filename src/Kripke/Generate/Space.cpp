@@ -157,7 +157,7 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
 
   // Create a zone volume field (this is simple considering our uniform grid)
   double zone_volume = dx*dy*dz;
-  auto &field_volume = createField<Field_Zone2Double>(data_store, "volume", al_v, set_zone_linear);
+  auto &field_volume = createField<Field_Zone2Double>(data_store, "volume", al_v, set_zone);
   Kripke::Kernel::kConst(field_volume, zone_volume);
 
 
@@ -288,10 +288,10 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
       data_store, "mixelem_to_fraction", al_v, set_mixelem);
 
   auto &field_zone_to_num_mixelem = createField<Field_Zone2Int>(
-      data_store, "zone_to_num_mixelem", al_v, set_zone_linear);
+      data_store, "zone_to_num_mixelem", al_v, set_zone);
 
   auto &field_zone_to_mixelem = createField<Field_Zone2MixElem>(
-      data_store, "zone_to_mixelem", al_v, set_zone_linear);
+      data_store, "zone_to_mixelem", al_v, set_zone);
 
 
   // Populate mixture fields with our dynamic data
@@ -299,7 +299,9 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
   for(size_t i = 0;i < sdom_list.size();++ i){
     SdomId sdom_id = sdom_list[i];
 
-    int num_zones = set_zone.size(sdom_id);
+    int num_zones_i  = set_zonei.size(sdom_id);
+    int num_zones_j  = set_zonej.size(sdom_id);
+    int num_zones_k  = set_zonek.size(sdom_id);
     int num_mixelems = set_mixelem.size(sdom_id);
 
     auto const &sdom_mix = mix[i];
@@ -310,31 +312,36 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
     auto zone_to_num_mixelem = field_zone_to_num_mixelem.getView(sdom_id);
     auto zone_to_mixelem     = field_zone_to_mixelem.getView(sdom_id);
 
+    auto zone_layout = set_zone.getLayout(sdom_id);
+
     RAJA::ReduceSum<RAJA::seq_reduce, MixElem> mixelem(MixElem{0});
-    RAJA::forall<RAJA::seq_exec>(
-      RAJA::TypedRangeSegment<Zone>(0, num_zones),
-      [=](Zone z){
-        ZoneMixture const &zone_mix = sdom_mix[*z];
-        int num_zone_mix = 0;
+    RAJA::forall<RAJA::seq_exec>(RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i), [=](ZoneI i) {
+      RAJA::forall<RAJA::seq_exec>(RAJA::TypedRangeSegment<ZoneJ>(0, num_zones_j), [=](ZoneJ j) {
+        RAJA::forall<RAJA::seq_exec>(RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k), [=](ZoneK k) {
+          int z = zone_layout(*i,*j,*k);
+          ZoneMixture const &zone_mix = sdom_mix[z];
+          int num_zone_mix = 0;
 
-        zone_to_mixelem(z) = mixelem;
+          zone_to_mixelem(i, j, k) = mixelem;
 
-        double zone_frac = 0.0;
-        for(Material m{0};m < 3;++ m){
-          if(zone_mix.fraction[*m] > 0.0){
-            MixElem me = mixelem;
+          double zone_frac = 0.0;
+          for(Material m{0};m < 3;++ m){
+            if(zone_mix.fraction[*m] > 0.0){
+              MixElem me = mixelem;
 
-            mixed_to_zone(me) = z;
-            mixed_to_material(me) = m;
-            mixed_to_fraction(me) = zone_mix.fraction[*m];
-            zone_frac += zone_mix.fraction[*m];
-            total_volume_red[*m] += zone_mix.fraction[*m] * zone_volume;
-            num_zone_mix ++;
-            mixelem += MixElem{1};
+              mixed_to_zone(me) = std::make_tuple(i, j, k);
+              mixed_to_material(me) = m;
+              mixed_to_fraction(me) = zone_mix.fraction[*m];
+              zone_frac += zone_mix.fraction[*m];
+              total_volume_red[*m] += zone_mix.fraction[*m] * zone_volume;
+              num_zone_mix ++;
+              mixelem += MixElem{1};
+            }
           }
-        }
-        KRIPKE_ASSERT(zone_frac == 1.0, "Zone fraction wrong: %e", zone_frac);
-        zone_to_num_mixelem(z) = num_zone_mix;
+          KRIPKE_ASSERT(zone_frac == 1.0, "Zone fraction wrong: %e", zone_frac);
+          zone_to_num_mixelem(i, j, k) = num_zone_mix;
+        });
+      });
     });
 
     KRIPKE_ASSERT((*((MixElem)mixelem)) == num_mixelems, "Mismatch in mixture info");
@@ -356,8 +363,8 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
 
   // Allocate storage for our zonal total cross-section
   auto &set_group = data_store.getVariable<Set>("Set/Group");
-  auto &set_sigt_zonal = data_store.newVariable<ProductSet<2>>(
-      "Set/SigmaTZonal", pspace, SPACE_PR, set_group, set_zone);
+  auto &set_sigt_zonal = data_store.newVariable<ProductSet<4>>(
+      "Set/SigmaTZonal", pspace, SPACE_PR, set_group, set_zonei, set_zonej, set_zonek);
   auto &field_sigt = createField<Field_SigmaTZonal>(
       data_store, "sigt_zonal", al_v, set_sigt_zonal);
   Kripke::Kernel::kConst(field_sigt, 0.0);
@@ -377,10 +384,13 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
       RAJA::forall<RAJA::seq_exec>(
         RAJA::TypedRangeSegment<MixElem>(0, num_mixelem),
         [=](MixElem mixelem){
-          Zone z       = mixelem_to_zone(mixelem);
+          ZoneX z      = mixelem_to_zone(mixelem);
+          ZoneI i      = std::get<0>(z);
+          ZoneJ j      = std::get<1>(z);
+          ZoneK k      = std::get<2>(z);
           Material mat = mixelem_to_material(mixelem);
 
-          sigt(g, z) += mixelem_to_fraction(mixelem) * input_vars.sigt[*mat];
+          sigt(g, i, j, k) += mixelem_to_fraction(mixelem) * input_vars.sigt[*mat];
       });
     }
 

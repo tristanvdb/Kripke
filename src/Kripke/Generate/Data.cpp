@@ -50,13 +50,15 @@ void Kripke::Generate::generateData(Kripke::Core::DataStore &data_store,
 
   PartitionSpace &pspace = data_store.getVariable<PartitionSpace>("pspace");
 
+  Set const &zonei_set  = data_store.getVariable<Set>("Set/ZoneI");
+  Set const &zonej_set  = data_store.getVariable<Set>("Set/ZoneJ");
+  Set const &zonek_set  = data_store.getVariable<Set>("Set/ZoneK");
 
   // Create a set to span angular the flux
   Set const &dir_set   = data_store.getVariable<Set>("Set/Direction");
   Set const &group_set = data_store.getVariable<Set>("Set/Group");
-  Set const &zone_set  = data_store.getVariable<Set>("Set/Zone");
-  ProductSet<3> *flux_set = new ProductSet<3>(pspace, SPACE_PQR,
-      dir_set, group_set, zone_set);
+  ProductSet<5> *flux_set = new ProductSet<5>(pspace, SPACE_PQR,
+      dir_set, group_set, zonei_set, zonej_set, zonek_set);
 
   data_store.addVariable("Set/Flux", flux_set);
 
@@ -69,8 +71,8 @@ void Kripke::Generate::generateData(Kripke::Core::DataStore &data_store,
 
   // Create a set to span moments of the angular flux
   Set const &moment_set   = data_store.getVariable<Set>("Set/Moment");
-  ProductSet<3> *fluxmoment_set = new ProductSet<3>(pspace, SPACE_PR,
-        moment_set, group_set, zone_set);
+  ProductSet<5> *fluxmoment_set = new ProductSet<5>(pspace, SPACE_PR,
+        moment_set, group_set, zonei_set, zonej_set, zonek_set);
 
   data_store.addVariable("Set/FluxMoment", fluxmoment_set);
 
@@ -81,9 +83,6 @@ void Kripke::Generate::generateData(Kripke::Core::DataStore &data_store,
 
 
   // Create "plane data" to hold face-centered values while sweeping
-  Set const &zonei_set = data_store.getVariable<Set>("Set/ZoneI");
-  Set const &zonej_set = data_store.getVariable<Set>("Set/ZoneJ");
-  Set const &zonek_set = data_store.getVariable<Set>("Set/ZoneK");
   Set const &iplane_set = data_store.newVariable<ProductSet<4>>("Set/IPlane", pspace, SPACE_PQR, dir_set, group_set, zonej_set, zonek_set);
   Set const &jplane_set = data_store.newVariable<ProductSet<4>>("Set/JPlane", pspace, SPACE_PQR, dir_set, group_set, zonei_set, zonek_set);
   Set const &kplane_set = data_store.newVariable<ProductSet<4>>("Set/KPlane", pspace, SPACE_PQR, dir_set, group_set, zonei_set, zonej_set);

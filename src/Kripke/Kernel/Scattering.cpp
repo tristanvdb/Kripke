@@ -54,7 +54,9 @@ struct ScatteringSdom {
                   Kripke::SdomId          sdom_src,
                   Kripke::SdomId          sdom_dst,
                   Set const               &set_group,
-                  Set const               &set_zone,
+                  Set const               &set_zonei,
+                  Set const               &set_zonej,
+                  Set const               &set_zonek,
                   Set const               &set_moment,
                   Field_Moments           &field_phi,
                   Field_Moments           &field_phi_out,
@@ -88,7 +90,9 @@ struct ScatteringSdom {
     auto mixelem_to_fraction = sdom_al.getView(field_mixelem_to_fraction);
     
     // grab dimensions
-    int num_zones =      set_zone.size(sdom_src);
+    int num_zones_i =    set_zonei.size(sdom_src);
+    int num_zones_j =    set_zonej.size(sdom_src);
+    int num_zones_k =    set_zonek.size(sdom_src);
     int num_groups_src = set_group.size(sdom_src);
     int num_groups_dst = set_group.size(sdom_dst);
     int num_moments =    set_moment.size(sdom_dst);
@@ -98,8 +102,11 @@ struct ScatteringSdom {
             RAJA::TypedRangeSegment<Moment>(0, num_moments),
             RAJA::TypedRangeSegment<Group>(0, num_groups_dst),
             RAJA::TypedRangeSegment<Group>(0, num_groups_src),
-            RAJA::TypedRangeSegment<Zone>(0, num_zones) ),
-        KRIPKE_LAMBDA (Moment nm, Group g, Group gp, Zone z) {
+            RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i),
+            RAJA::TypedRangeSegment<ZoneJ>(0, num_zones_j),
+            RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k)
+        ),
+        KRIPKE_LAMBDA (Moment nm, Group g, Group gp, ZoneI i, ZoneJ j, ZoneK k) {
 
             // map nm to n
             Legendre n = moment_to_legendre(nm);
@@ -107,8 +114,8 @@ struct ScatteringSdom {
             GlobalGroup global_g{*g+glower_dst};
             GlobalGroup global_gp{*gp+glower_src};
 
-            MixElem mix_start = zone_to_mixelem(z);
-            MixElem mix_stop = mix_start + zone_to_num_mixelem(z);
+            MixElem mix_start = zone_to_mixelem(i, j, k);
+            MixElem mix_stop = mix_start + zone_to_num_mixelem(i, j, k);
 
             double sigs_z = 0.0;
             for(MixElem mix = mix_start;mix < mix_stop;++ mix){
@@ -117,7 +124,7 @@ struct ScatteringSdom {
 
               sigs_z += sigs(mat, n, global_g, global_gp) * fraction;
             }
-            phi_out(nm, g, z) += sigs_z * phi(nm, gp, z);
+            phi_out(nm, g, i, j, k) += sigs_z * phi(nm, gp, i, j, k);
         }
     );
   }
@@ -141,7 +148,9 @@ void Kripke::Kernel::scattering(Kripke::Core::DataStore &data_store)
 
   auto &set_group  = data_store.getVariable<Kripke::Core::Set>("Set/Group");
   auto &set_moment = data_store.getVariable<Kripke::Core::Set>("Set/Moment");
-  auto &set_zone   = data_store.getVariable<Kripke::Core::Set>("Set/Zone");
+  auto &set_zonei  = data_store.getVariable<Kripke::Core::Set>("Set/ZoneI");
+  auto &set_zonej  = data_store.getVariable<Kripke::Core::Set>("Set/ZoneJ");
+  auto &set_zonek  = data_store.getVariable<Kripke::Core::Set>("Set/ZoneK");
 
   auto &field_phi     = data_store.getVariable<Kripke::Field_Moments>("phi");
   auto &field_phi_out = data_store.getVariable<Kripke::Field_Moments>("phi_out");
@@ -168,7 +177,7 @@ void Kripke::Kernel::scattering(Kripke::Core::DataStore &data_store)
 
       Kripke::dispatch(al_v, ScatteringSdom{}, sdom_src,
                        sdom_dst,
-                       set_group, set_zone, set_moment,
+                       set_group, set_zonei, set_zonej, set_zonek, set_moment,
                        field_phi, field_phi_out, field_sigs,
                        field_zone_to_mixelem,
                        field_zone_to_num_mixelem,

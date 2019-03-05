@@ -49,7 +49,9 @@ struct PopulationSdom {
                   Kripke::SdomId sdom_id,
                   Set const               &set_dir,
                   Set const               &set_group,
-                  Set const               &set_zone,
+                  Set const               &set_zonei,
+                  Set const               &set_zonej,
+                  Set const               &set_zonek,
                   Field_Flux              &field_psi,
                   Field_Direction2Double  &field_w,
                   Field_Zone2Double       &field_volume,
@@ -63,7 +65,9 @@ struct PopulationSdom {
 
     int num_directions = set_dir.size(sdom_id);
     int num_groups =     set_group.size(sdom_id);
-    int num_zones =      set_zone.size(sdom_id);
+    int num_zones_i =    set_zonei.size(sdom_id);
+    int num_zones_j =    set_zonej.size(sdom_id);
+    int num_zones_k =    set_zonek.size(sdom_id);
 
     auto psi    = sdom_al.getView(field_psi);
     auto w      = sdom_al.getView(field_w);
@@ -75,10 +79,13 @@ struct PopulationSdom {
         camp::make_tuple(
             RAJA::TypedRangeSegment<Direction>(0, num_directions),
             RAJA::TypedRangeSegment<Group>(0, num_groups),
-            RAJA::TypedRangeSegment<Zone>(0, num_zones) ),
-        KRIPKE_LAMBDA (Direction d, Group g, Zone z) {
+            RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i),
+            RAJA::TypedRangeSegment<ZoneJ>(0, num_zones_j),
+            RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k)
+        ),
+        KRIPKE_LAMBDA (Direction d, Group g, ZoneI i, ZoneJ j, ZoneK k) {
 
-          part_red += w(d) * psi(d,g,z) * volume(z);
+          part_red += w(d) * psi(d, g, i, j, k) * volume(i, j, k);
 
         }
     );
@@ -100,7 +107,9 @@ double Kripke::Kernel::population(Kripke::Core::DataStore &data_store)
 
   Set const &set_dir    = data_store.getVariable<Set>("Set/Direction");
   Set const &set_group  = data_store.getVariable<Set>("Set/Group");
-  Set const &set_zone   = data_store.getVariable<Set>("Set/Zone");
+  Set const &set_zonei  = data_store.getVariable<Set>("Set/ZoneI");
+  Set const &set_zonej  = data_store.getVariable<Set>("Set/ZoneJ");
+  Set const &set_zonek  = data_store.getVariable<Set>("Set/ZoneK");
 
   auto &field_psi =       data_store.getVariable<Field_Flux>("psi");
   auto &field_w =         data_store.getVariable<Field_Direction2Double>("quadrature/w");
@@ -111,7 +120,7 @@ double Kripke::Kernel::population(Kripke::Core::DataStore &data_store)
   for (Kripke::SdomId sdom_id : field_psi.getWorkList()){
 
     Kripke::dispatch(al_v, PopulationSdom{}, sdom_id,
-                     set_dir, set_group, set_zone,
+                     set_dir, set_group, set_zonei, set_zonej, set_zonek,
                      field_psi, field_w, field_volume,
                      &part);
   }

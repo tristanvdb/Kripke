@@ -53,9 +53,10 @@ namespace Kripke {
   RAJA_INDEX_VALUE(ZoneI, "ZoneI");
   RAJA_INDEX_VALUE(ZoneJ, "ZoneJ");
   RAJA_INDEX_VALUE(ZoneK, "ZoneK");
+  using ZoneX = std::tuple<ZoneI,ZoneJ,ZoneK>;
 
-  using Field_Flux = Kripke::Core::Field<double, Direction, Group, Zone>;
-  using Field_Moments = Kripke::Core::Field<double, Moment, Group, Zone>;
+  using Field_Flux = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneJ, ZoneK>;
+  using Field_Moments = Kripke::Core::Field<double, Moment, Group, ZoneI, ZoneJ, ZoneK>;
 
   using Field_IPlane = Kripke::Core::Field<double, Direction, Group, ZoneJ, ZoneK>;
   using Field_JPlane = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneK>;
@@ -78,15 +79,15 @@ namespace Kripke {
   using Field_ZoneI2Double  = Kripke::Core::Field<double, ZoneI>;
   using Field_ZoneJ2Double  = Kripke::Core::Field<double, ZoneJ>;
   using Field_ZoneK2Double  = Kripke::Core::Field<double, ZoneK>;
-  using Field_Zone2Double   = Kripke::Core::Field<double, Zone>;
-  using Field_Zone2Int      = Kripke::Core::Field<int, Zone>;
-  using Field_Zone2MixElem  = Kripke::Core::Field<MixElem, Zone>;
+  using Field_Zone2Double   = Kripke::Core::Field<double, ZoneI, ZoneJ, ZoneK>;
+  using Field_Zone2Int      = Kripke::Core::Field<int, ZoneI, ZoneJ, ZoneK>;
+  using Field_Zone2MixElem  = Kripke::Core::Field<MixElem, ZoneI, ZoneJ, ZoneK>;
 
   using Field_MixElem2Double   = Kripke::Core::Field<double, MixElem>;
   using Field_MixElem2Material = Kripke::Core::Field<Material, MixElem>;
-  using Field_MixElem2Zone     = Kripke::Core::Field<Zone, MixElem>;
+  using Field_MixElem2Zone     = Kripke::Core::Field<ZoneX, MixElem>;
 
-  using Field_SigmaTZonal = Kripke::Core::Field<double, Group, Zone>;
+  using Field_SigmaTZonal = Kripke::Core::Field<double, Group, ZoneI, ZoneJ, ZoneK>;
 
 
   template<typename T>
