@@ -79,11 +79,11 @@ struct PopulationSdom {
         camp::make_tuple(
             RAJA::TypedRangeSegment<Direction>(0, num_directions),
             RAJA::TypedRangeSegment<Group>(0, num_groups),
-            RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i),
+            RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k),
             RAJA::TypedRangeSegment<ZoneJ>(0, num_zones_j),
-            RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k)
+            RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i)
         ),
-        KRIPKE_LAMBDA (Direction d, Group g, ZoneI i, ZoneJ j, ZoneK k) {
+        KRIPKE_LAMBDA (Direction d, Group g, ZoneK k, ZoneJ j, ZoneI i) {
 
           part_red += w(d) * psi(d, g, i, j, k) * volume(i, j, k);
 

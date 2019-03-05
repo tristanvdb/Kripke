@@ -102,11 +102,11 @@ struct ScatteringSdom {
             RAJA::TypedRangeSegment<Moment>(0, num_moments),
             RAJA::TypedRangeSegment<Group>(0, num_groups_dst),
             RAJA::TypedRangeSegment<Group>(0, num_groups_src),
-            RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i),
+            RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k),
             RAJA::TypedRangeSegment<ZoneJ>(0, num_zones_j),
-            RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k)
+            RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i)
         ),
-        KRIPKE_LAMBDA (Moment nm, Group g, Group gp, ZoneI i, ZoneJ j, ZoneK k) {
+        KRIPKE_LAMBDA (Moment nm, Group g, Group gp, ZoneK k, ZoneJ j, ZoneI i) {
 
             // map nm to n
             Legendre n = moment_to_legendre(nm);

@@ -49,7 +49,7 @@ struct Policy_Scattering<ArchLayoutT<ArchT_Sequential, LayoutT_DGZ>> {
         For<0, loop_exec, // moment
           For<1, loop_exec, // dst group
             For<2, loop_exec, // src group
-              For<3, loop_exec, // zone
+              Collapse<loop_exec, ArgList<5,4,3>, // zones i,j,k
                 Lambda<0>
               >
             >

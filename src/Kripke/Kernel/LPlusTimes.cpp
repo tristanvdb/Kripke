@@ -78,11 +78,11 @@ struct LPlusTimesSdom {
             RAJA::TypedRangeSegment<Direction>(0, num_directions),
             RAJA::TypedRangeSegment<Moment>(0, num_moments),
             RAJA::TypedRangeSegment<Group>(0, num_groups),
-            RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i),
+            RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k),
             RAJA::TypedRangeSegment<ZoneJ>(0, num_zones_j),
-            RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k)
+            RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i)
         ),
-        KRIPKE_LAMBDA (Direction d, Moment nm, Group g, ZoneI i, ZoneJ j, ZoneK k) {
+        KRIPKE_LAMBDA (Direction d, Moment nm, Group g, ZoneK k, ZoneJ j, ZoneI i) {
 
             rhs(d, g, i, j, k) += ell_plus(d, nm) * phi_out(nm, g, i, j, k);
 
