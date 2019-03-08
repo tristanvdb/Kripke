@@ -59,6 +59,8 @@ namespace Core {
 
 #define DEBUG_ZFP_WITH_PRINTF 0
 
+  constexpr size_t zfp_block_size_bytes{512}; // should be able to get this out of zfp somehow...
+  
   template <typename CONFIG, typename ELEMENT>
   struct BasicStorageTypeHelper {
     using config_type = CONFIG;
@@ -100,6 +102,13 @@ namespace Core {
   struct has_zfp_rate<T, decltype(std::declval<T>().zfp_rate, void())> : std::true_type { };
 
   template<typename T, typename = void>
+  struct has_cached_zfp_blocks : std::false_type { };
+
+  template<typename T>
+  struct has_cached_zfp_blocks<T, decltype(std::declval<T>().cached_zfp_blocks, void())> : std::true_type { };
+
+
+  template<typename T, typename = void>
   struct has_exclude : std::false_type { };
 
   template<typename T>
@@ -112,11 +121,11 @@ namespace Core {
   struct zfp_array_selector<ELEMENT, 1>{
     using type = zfp::array1<ELEMENT>;
 
-    static inline type * alloc(size_t size, double rate) {
+    static inline type * alloc(size_t size, double rate, size_t cache_size) {
 #if DEBUG_ZFP_WITH_PRINTF
       printf("  Alloc ZFP 1D array of size %zu with rate %f\n", size, rate);
 #endif
-      return new type(size, rate);
+      return new type(size, rate, NULL, zfp_block_size_bytes*cache_size);
     }
 
     template <typename LayoutT>
@@ -132,9 +141,9 @@ namespace Core {
   struct zfp_array_selector<ELEMENT, 2>{
     using type = zfp::array2<ELEMENT>;
 
-    static inline type * alloc(size_t size, double rate) {
+    static inline type * alloc(size_t size, double rate, size_t cache_size) {
 #if DEBUG_ZFP_WITH_PRINTF
-      printf("  Alloc ZFP 2D array of size %zu with rate %f\n", size, rate);
+      printf("  Alloc ZFP 2D array of size %zu with rate %f\n", size, rate, NULL, zfp_block_size_bytes*cache_size);
 #endif
       return new type(size, 1, rate);
     }
@@ -152,11 +161,11 @@ namespace Core {
   struct zfp_array_selector<ELEMENT, 3>{
     using type = zfp::array3<ELEMENT>;
 
-    static inline type * alloc(size_t size, double rate) {
+    static inline type * alloc(size_t size, double rate, size_t cache_size) {
 #if DEBUG_ZFP_WITH_PRINTF
       printf("  Alloc ZFP 3D array of size %zu with rate %f\n", size, rate);
 #endif
-      return new type(size, 1, 1, rate);
+      return new type(size, 1, 1, rate, NULL, zfp_block_size_bytes*cache_size);
     }
 
     template <typename LayoutT>
@@ -194,9 +203,9 @@ namespace Core {
 
     static inline storage_pointer alloc(size_t size) {
 #if DEBUG_ZFP_WITH_PRINTF
-      printf("Alloc ZFP array of size %zu with rate %f\n", size, config_type::zfp_rate);
+      printf("Alloc ZFP array of size %zu with rate %f, cache blocks %lu\n", size, config_type::zfp_rate,config_type::cached_zfp_blocks);
 #endif
-      return array_selector::alloc(size, config_type::zfp_rate);
+      return array_selector::alloc(size, config_type::zfp_rate, config_type::cached_zfp_blocks);
     }
 
     static inline void free(storage_pointer & store, element_pointer & baseptr) {
@@ -305,14 +314,14 @@ namespace Core {
         store = new storage_type*[slow_size];
         baseptr = new typename storage_type::pointer[slow_size];
         for (size_t i = 0; i < slow_size; i++) {
-          store[i] = array_selector::alloc(fast_size, config_type::zfp_rate);
+          store[i] = array_selector::alloc(fast_size, config_type::zfp_rate, config_type::cached_zfp_blocks);
           array_selector::layout(store[i], baseptr[i], fast_layout);
         }
       } else {
         store = new storage_type*[fast_size];
         baseptr = new typename storage_type::pointer[fast_size];
         for (size_t i = 0; i < fast_size; i++) {
-          store[i] = array_selector::alloc(slow_size, config_type::zfp_rate);
+          store[i] = array_selector::alloc(slow_size, config_type::zfp_rate, config_type::cached_zfp_blocks);
           array_selector::layout(store[i], baseptr[i], slow_layout);
         }
       }
@@ -323,23 +332,34 @@ namespace Core {
     typename ConfigT,
     size_t N,
     bool = std::is_base_of<field_storage_config, ConfigT>::value,
-    bool = has_zfp_rate<ConfigT>::value
+    bool = has_zfp_rate<ConfigT>::value,
+    bool = has_cached_zfp_blocks<ConfigT>::value
   >
   struct StorageTypeHelper;
 
   template <typename ErrorT, size_t N>
-  struct StorageTypeHelper<ErrorT, N, false, true> {
+    struct StorageTypeHelper<ErrorT, N, false, true, true> {
+    static_assert("Does not make sense!");
+  };
+
+  template <typename ErrorT, size_t N>
+    struct StorageTypeHelper<ErrorT, N, false, true, false> {
+    static_assert("Does not make sense!");
+  };
+
+  template <typename ErrorT, size_t N>
+    struct StorageTypeHelper<ErrorT, N, false, false, true> {
     static_assert("Does not make sense!");
   };
 
   template <typename ElementT, size_t N>
-  struct StorageTypeHelper<ElementT, N, false, false> : public BasicStorageTypeHelper<ElementT, ElementT> {};
+    struct StorageTypeHelper<ElementT, N, false, false, false> : public BasicStorageTypeHelper<ElementT, ElementT> {};
 
   template <typename ConfigT, size_t N>
-  struct StorageTypeHelper<ConfigT, N, true, false> : public BasicStorageTypeHelper<ConfigT, typename ConfigT::type> {};
+    struct StorageTypeHelper<ConfigT, N, true, false, false> : public BasicStorageTypeHelper<ConfigT, typename ConfigT::type> {};
 
   template <typename ConfigT, size_t N>
-  struct StorageTypeHelper<ConfigT, N, true, true> : public ZFPStorageTypeHelper<ConfigT, N, has_exclude<ConfigT>::value> {};
+    struct StorageTypeHelper<ConfigT, N, true, true, true> : public ZFPStorageTypeHelper<ConfigT, N, has_exclude<ConfigT>::value> {};
 
 #endif
 

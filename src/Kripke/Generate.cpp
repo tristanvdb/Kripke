@@ -61,7 +61,14 @@ void Kripke::generateProblem(Kripke::Core::DataStore &data_store,
   data_store.addVariable("timing", new Kripke::Timing());
   KRIPKE_TIMER(data_store, Generate);
 
+#ifdef KRIPKE_USE_ZFP
+  double_zfp_psi::zfp_rate = input_vars.psi_zfp_rate;
+  double_zfp_phi::zfp_rate = input_vars.phi_zfp_rate;
 
+  double_zfp_psi::cached_zfp_blocks = input_vars.psi_cached_zfp_blocks;
+  double_zfp_phi::cached_zfp_blocks = input_vars.phi_cached_zfp_blocks;
+#endif
+  
   // Create parallel and subdomain decomposition
   Generate::generateDecomp(data_store, input_vars);
 

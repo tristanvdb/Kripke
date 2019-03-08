@@ -39,6 +39,8 @@
 #include <Kripke/Core/Set.h>
 #include <Kripke/Core/Field.h>
 
+#define _ZFP_RATE 16
+
 namespace Kripke {
 
   RAJA_INDEX_VALUE(Dimension, "Dimension");
@@ -59,8 +61,23 @@ namespace Kripke {
 
   struct double_zfp_rate_16 : public Kripke::Core::field_storage_config {
     using type = double;
-    constexpr static double zfp_rate = 16.;
+    constexpr static double zfp_rate = _ZFP_RATE; //16.
+    constexpr static size_t cached_zfp_blocks = 2048;// dont' know what to put here...
   };
+
+  struct double_zfp_psi : public Kripke::Core::field_storage_config {
+    using type = double;
+    static double zfp_rate; // initialized in Generate/Data.cpp
+    static size_t cached_zfp_blocks;// initialized in Generate/Data.cpp
+  };
+
+  struct double_zfp_phi : public Kripke::Core::field_storage_config {
+    using type = double;
+    static double zfp_rate; // initialized in Generate/Data.cpp
+    static size_t cached_zfp_blocks; // initialized in Generate/Data.cpp
+  };
+
+  
 
 #define TEST_ZFP_ARRAY_OF_ARRAY 1
 #if TEST_ZFP_ARRAY_OF_ARRAY
@@ -71,8 +88,9 @@ namespace Kripke {
   //         -> `zfp_fast_dims == true` => the faster dimension are used
   struct double_zfp_rate_16_exclude_1_fast : public Kripke::Core::field_storage_config {
     using type = double;
-    constexpr static double zfp_rate = 16.;
+    constexpr static double zfp_rate = _ZFP_RATE;//16.;
     constexpr static size_t exclude = 1;
+    constexpr static size_t cached_zfp_blocks = 2048;// dont' know what to put here...
     constexpr static size_t zfp_fast_dims = true;
   };
 #endif
@@ -81,23 +99,26 @@ namespace Kripke {
 #if TEST_MORE_ZFP_ARRAY_OF_ARRAY
   struct double_zfp_rate_16_exclude_2_fast : public Kripke::Core::field_storage_config {
     using type = double;
-    constexpr static double zfp_rate = 16.;
+    constexpr static double zfp_rate = _ZFP_RATE;//16.;
     constexpr static size_t exclude = 2;
+    constexpr static size_t cached_zfp_blocks = 2048;// dont' know what to put here...
     constexpr static bool zfp_fast_dims = true;
   };
   struct double_zfp_rate_16_exclude_2_slow : public Kripke::Core::field_storage_config {
     using type = double;
-    constexpr static double zfp_rate = 16.;
+    constexpr static double zfp_rate = _ZFP_RATE;//16.;
     constexpr static size_t exclude = 2;
+    constexpr static size_t cached_zfp_blocks = 2048;// dont' know what to put here...
     constexpr static bool zfp_fast_dims = false;
   };
 #endif
 
-  using Field_Flux = Kripke::Core::Field<double_zfp_rate_16, Direction, Group, Zone>;
+  using Field_Flux = Kripke::Core::Field<double_zfp_psi, Direction, Group, Zone>;
+  //  using Field_Flux = Kripke::Core::Field<double_zfp_rate_16, Direction, Group, Zone>;
 //using Field_Flux_psi = Field_Flux; // updates in: SweepSubdomain
 //using Field_Flux_rhs = Field_Flux; // updates in: LPlusTime
 
-  using Field_Moments = Kripke::Core::Field<double_zfp_rate_16, Moment, Group, Zone>;
+  using Field_Moments = Kripke::Core::Field<double_zfp_phi, Moment, Group, Zone>;
 //using Field_Moments_phi = Field_Moments; // updates in: LTimes
 //using Field_Moments_phi_out = Field_Moments; // updates in: Scattering, Source
 

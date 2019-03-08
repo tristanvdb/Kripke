@@ -43,6 +43,12 @@
 using namespace Kripke;
 using namespace Kripke::Core;
 
+#ifdef KRIPKE_USE_ZFP
+double double_zfp_psi::zfp_rate{64};
+size_t double_zfp_psi::cached_zfp_blocks{1024};
+double double_zfp_phi::zfp_rate{64};
+size_t double_zfp_phi::cached_zfp_blocks{1024};
+#endif
 
 void Kripke::Generate::generateData(Kripke::Core::DataStore &data_store,
     InputVariables const &input_vars)

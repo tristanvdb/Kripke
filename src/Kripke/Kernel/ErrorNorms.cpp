@@ -125,9 +125,9 @@ struct ErrorNormsSdom {
 			     KRIPKE_LAMBDA (Direction d, Group g, ZoneK k, ZoneJ j, ZoneI i) {
 
 
-			       double xz = -60  + dx(i)*global_i0 + dx(i)*(double(*i)+0.5);
-			       double yz = -100 + dy(j)*global_j0 + dy(j)*(double(*j)+0.5);
-			       double zz = -60  + dz(k)*global_k0 + dz(k)*(double(*k)+0.5);
+			       double xz = -15  + dx(i)*global_i0 + dx(i)*(double(*i)+0.5);
+			       double yz = -25 + dy(j)*global_j0 + dy(j)*(double(*j)+0.5);
+			       double zz = -15  + dz(k)*global_k0 + dz(k)*(double(*k)+0.5);
 
 			       Zone z(zone_layout(*i, *j, *k));
 			       double psi_exact = compute_exact_solution<double>(xz,yz,zz,

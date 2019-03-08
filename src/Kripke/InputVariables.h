@@ -71,6 +71,14 @@ struct InputVariables {
   
   // Output Options
   std::string run_name;         // Name to use when generating output files
+  
+#ifdef KRIPKE_USE_ZFP
+  double psi_zfp_rate;
+  size_t psi_cached_zfp_blocks;
+  double phi_zfp_rate;
+  size_t phi_cached_zfp_blocks;
+#endif
+  
 };
 
 #endif

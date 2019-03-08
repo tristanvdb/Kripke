@@ -394,6 +394,20 @@ int main(int argc, char **argv) {
     else if(opt == "--layout"){
       vars.al_v.layout_v = Kripke::stringToLayout(cmd.pop());     
     }
+#ifdef KRIPKE_USE_ZFP
+    else if(opt == "--zfp_psi_rate") {
+      vars.psi_zfp_rate = std::atof(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_phi_rate") {
+      vars.phi_zfp_rate = std::atof(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_psi_cache") {
+      vars.psi_cached_zfp_blocks = std::atoi(cmd.pop().c_str());
+    } 
+    else if(opt == "--zfp_phi_cache") {
+      vars.phi_cached_zfp_blocks = std::atoi(cmd.pop().c_str());
+    } 
+#endif
     else{
       printf("Unknwon options %s\n", opt.c_str());
       usage();
@@ -460,8 +474,15 @@ int main(int argc, char **argv) {
     printf("    Architecture:          %s\n", archToString(vars.al_v.arch_v).c_str());
     printf("    Data Layout:           %s\n", layoutToString(vars.al_v.layout_v).c_str());
 
-
     
+#ifdef KRIPKE_USE_ZFP
+    printf("\n");
+    printf("  ZFP Options:\n");
+    printf("    psi compression rate: %f\n", vars.psi_zfp_rate);
+    printf("    psi blocks cached: %lu\n", vars.psi_cached_zfp_blocks);
+    printf("    phi compression rate: %f\n", vars.phi_zfp_rate);
+    printf("    phi blocks cached: %lu\n", vars.phi_cached_zfp_blocks);
+#endif    
     
   }
 

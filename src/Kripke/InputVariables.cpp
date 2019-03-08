@@ -57,6 +57,14 @@ InputVariables::InputVariables() :
   parallel_method(PMETHOD_SWEEP),
   num_material_subsamples(4),
   run_name("kripke")
+#ifdef KRIPKE_USE_ZFP
+  // I, KKC, freely acknowldge that this ifdef block in a ctor initializer list is an abomination.
+  ,
+  psi_zfp_rate{64},
+  psi_cached_zfp_blocks{1024},
+  phi_zfp_rate{64},
+  phi_cached_zfp_blocks{1024}
+#endif
 {
   num_zonesets_dim[0] = 1; 
   num_zonesets_dim[1] = 1;
@@ -68,7 +76,8 @@ InputVariables::InputVariables() :
   
   sigs[0] = 0.05;  
   sigs[1] = 0.00005;
-  sigs[2] = 0.05; 
+  sigs[2] = 0.05;
+
 }
 
 /**
@@ -129,6 +138,28 @@ bool InputVariables::checkValues(void) const{
       printf("You must run at least one iteration (%d)\n", niter);
     return true;
   }
+
+#ifdef KRIPKE_USE_ZFP
+  if ( psi_zfp_rate<1.0 ) {
+    if (!rank)
+      printf("The zfp compression rate for the psi array (%f) must be >=1.0\n", psi_zfp_rate);
+  }
+
+  if ( phi_zfp_rate<1.0 ) {
+    if (!rank)
+      printf("The zfp compression rate for the phi array (%f) must be >=1.0\n", phi_zfp_rate);
+  }
+
+  if ( !psi_cached_zfp_blocks ) {
+    if (!rank)
+      printf("The zfp number of cached blocks the psi array (%i) must be >=1\n", psi_cached_zfp_blocks);
+  }
+
+  if ( !psi_cached_zfp_blocks ) {
+    if (!rank)
+      printf("The zfp number of cached blocks the phi array (%i) must be >=1\n", phi_cached_zfp_blocks);
+  }
+#endif
   
   return false;
 }
