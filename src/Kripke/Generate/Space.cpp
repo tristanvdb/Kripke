@@ -315,34 +315,47 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
     auto zone_layout = set_zone.getLayout(sdom_id);
 
     RAJA::ReduceSum<RAJA::seq_reduce, MixElem> mixelem(MixElem{0});
-    RAJA::forall<RAJA::seq_exec>(RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i), [=](ZoneI i) {
-      RAJA::forall<RAJA::seq_exec>(RAJA::TypedRangeSegment<ZoneJ>(0, num_zones_j), [=](ZoneJ j) {
-        RAJA::forall<RAJA::seq_exec>(RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k), [=](ZoneK k) {
-          int z = zone_layout(*i,*j,*k);
-          ZoneMixture const &zone_mix = sdom_mix[z];
-          int num_zone_mix = 0;
+    RAJA::kernel<
+      RAJA::KernelPolicy<
+        RAJA::statement::Collapse<
+          RAJA::loop_exec,
+          RAJA::ArgList<0,1,2>,
+          RAJA::statement::Lambda<0>
+        >
+      >
+    >(
+      camp::make_tuple(
+        RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k),
+        RAJA::TypedRangeSegment<ZoneJ>(0, num_zones_j),
+        RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i)
+      ),
+      KRIPKE_LAMBDA (ZoneK k, ZoneJ j, ZoneI i) {
 
-          zone_to_mixelem(i, j, k) = mixelem;
+        int z = zone_layout(*i,*j,*k);
+        ZoneMixture const &zone_mix = sdom_mix[z];
+        int num_zone_mix = 0;
 
-          double zone_frac = 0.0;
-          for(Material m{0};m < 3;++ m){
-            if(zone_mix.fraction[*m] > 0.0){
-              MixElem me = mixelem;
+        zone_to_mixelem(i, j, k) = mixelem;
 
-              mixed_to_zone(me) = std::make_tuple(i, j, k);
-              mixed_to_material(me) = m;
-              mixed_to_fraction(me) = zone_mix.fraction[*m];
-              zone_frac += zone_mix.fraction[*m];
-              total_volume_red[*m] += zone_mix.fraction[*m] * zone_volume;
-              num_zone_mix ++;
-              mixelem += MixElem{1};
-            }
+        double zone_frac = 0.0;
+        for(Material m{0};m < 3;++ m){
+          if(zone_mix.fraction[*m] > 0.0){
+            MixElem me = mixelem;
+
+            mixed_to_zone(me) = std::make_tuple(i, j, k);
+            mixed_to_material(me) = m;
+            mixed_to_fraction(me) = zone_mix.fraction[*m];
+            zone_frac += zone_mix.fraction[*m];
+            total_volume_red[*m] += zone_mix.fraction[*m] * zone_volume;
+            num_zone_mix ++;
+            mixelem += MixElem{1};
           }
-          KRIPKE_ASSERT(zone_frac == 1.0, "Zone fraction wrong: %e", zone_frac);
-          zone_to_num_mixelem(i, j, k) = num_zone_mix;
-        });
-      });
-    });
+        }
+        KRIPKE_ASSERT(zone_frac == 1.0, "Zone fraction wrong: %e", zone_frac);
+        zone_to_num_mixelem(i, j, k) = num_zone_mix;
+
+      }
+    );
 
     KRIPKE_ASSERT((*((MixElem)mixelem)) == num_mixelems, "Mismatch in mixture info");
   }
