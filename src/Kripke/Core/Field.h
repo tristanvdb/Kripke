@@ -80,8 +80,9 @@ namespace Core {
     }
 
     template <typename LayoutT>
-    static inline void layout(storage_pointer & store, element_pointer & baseptr, LayoutT const & layout) {
+    static inline size_t layout(storage_pointer & store, element_pointer & baseptr, LayoutT const & layout) {
       baseptr = store;
+      return layout.size() * sizeof(element_type);
     }
   };
 
@@ -120,12 +121,14 @@ namespace Core {
     }
 
     template <typename LayoutT>
-    static inline void layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
+    static inline size_t layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
 #if DEBUG_ZFP_WITH_PRINTF
       printf("  Layout ZFP 1D array to [%lu]\n", layout.sizes[0]);
 #endif
       store->resize(layout.sizes[0]);
       baseptr = typename type::pointer(store, 0);
+
+      return store->compressed_size();
     }
   };
   template <typename ELEMENT>
@@ -140,12 +143,14 @@ namespace Core {
     }
 
     template <typename LayoutT>
-    static inline void layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
+    static inline size_t layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
 #if DEBUG_ZFP_WITH_PRINTF
       printf("  Layout ZFP 2D array to [%lux%lu]\n", layout.sizes[0], layout.sizes[1]);
 #endif
       store->resize(layout.sizes[0], layout.sizes[1]);
       baseptr = typename type::pointer(store, 0, 0);
+
+      return store->compressed_size();
     }
   };
   template <typename ELEMENT>
@@ -160,12 +165,14 @@ namespace Core {
     }
 
     template <typename LayoutT>
-    static inline void layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
+    static inline size_t layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
 #if DEBUG_ZFP_WITH_PRINTF
       printf("  Layout ZFP 3D array to [%lux%lux%lu]\n", layout.sizes[0], layout.sizes[1], layout.sizes[2]);
 #endif
       store->resize(layout.sizes[0], layout.sizes[1], layout.sizes[2]);
       baseptr = typename type::pointer(store, 0, 0, 0);
+
+      return store->compressed_size();
     }
   };
 
@@ -204,12 +211,12 @@ namespace Core {
     }
 
     template <typename LayoutT>
-    static inline void layout(storage_pointer & store, element_pointer & baseptr, LayoutT const & layout) {
+    static inline size_t layout(storage_pointer & store, element_pointer & baseptr, LayoutT const & layout) {
 #if DEBUG_ZFP_WITH_PRINTF
       printf("Layout ZFP array\n");
 #endif
       static_assert(LayoutT::n_dims == N, "Sizes of the layout and storage do not match.");
-      array_selector::layout(store, baseptr, layout);
+      return array_selector::layout(store, baseptr, layout);
     }
   };
 
@@ -228,7 +235,7 @@ namespace Core {
       constexpr static size_t num_slow_dims = N - exclude;
   };
 
-  struct tmp_split_layout {
+  struct tmp_split_layout_t {
     std::vector<size_t> sizes;
   };
 
@@ -274,14 +281,14 @@ namespace Core {
     }
 
     template <typename LayoutT>
-    static inline void layout(storage_pointer & store, element_pointer & baseptr, LayoutT const & layout) {
+    static inline size_t layout(storage_pointer & store, element_pointer & baseptr, LayoutT const & layout) {
 #if DEBUG_ZFP_WITH_PRINTF
       printf("Layout array of ZFP array:\n");
       printf(" -- LayoutT::n_dims = %d\n", LayoutT::n_dims);
 #endif
       static_assert(LayoutT::n_dims == N, "Sizes of the layout and storage do not match.");
 
-      tmp_split_layout slow_layout, fast_layout;
+      tmp_split_layout_t slow_layout, fast_layout;
 
       size_t slow_size = 1;
       size_t fast_size = 1;
@@ -301,21 +308,24 @@ namespace Core {
       printf(" - slow_size = %d\n", slow_size);
       printf(" - fast_size = %d\n", fast_size);
 #endif
+      size_t size = 0;
       if (config_type::zfp_fast_dims) {
         store = new storage_type*[slow_size];
         baseptr = new typename storage_type::pointer[slow_size];
         for (size_t i = 0; i < slow_size; i++) {
           store[i] = array_selector::alloc(fast_size, config_type::zfp_rate);
-          array_selector::layout(store[i], baseptr[i], fast_layout);
+          size += array_selector::layout(store[i], baseptr[i], fast_layout);
         }
       } else {
         store = new storage_type*[fast_size];
         baseptr = new typename storage_type::pointer[fast_size];
         for (size_t i = 0; i < fast_size; i++) {
           store[i] = array_selector::alloc(slow_size, config_type::zfp_rate);
-          array_selector::layout(store[i], baseptr[i], slow_layout);
+          size += array_selector::layout(store[i], baseptr[i], slow_layout);
         }
       }
+
+      return size;
     }
   };
 
@@ -332,8 +342,8 @@ namespace Core {
     static_assert("Does not make sense!");
   };
 
-  template <typename ElementT, size_t N>
-  struct StorageTypeHelper<ElementT, N, false, false> : public BasicStorageTypeHelper<ElementT, ElementT> {};
+  template <typename StorageT, size_t N>
+  struct StorageTypeHelper<StorageT, N, false, false> : public BasicStorageTypeHelper<StorageT, StorageT> {};
 
   template <typename ConfigT, size_t N>
   struct StorageTypeHelper<ConfigT, N, true, false> : public BasicStorageTypeHelper<ConfigT, typename ConfigT::type> {};
@@ -341,17 +351,95 @@ namespace Core {
   template <typename ConfigT, size_t N>
   struct StorageTypeHelper<ConfigT, N, true, true> : public ZFPStorageTypeHelper<ConfigT, N, has_exclude<ConfigT>::value> {};
 
+  template <
+    typename ConfigT,
+    bool = std::is_base_of<field_storage_config, ConfigT>::value
+  >
+  struct ElementTypeFromConfigT;
+
+  template <typename StorageT>
+  struct ElementTypeFromConfigT<StorageT, false> {
+    using type = StorageT;
+  };
+
+  template <typename ConfigT>
+  struct ElementTypeFromConfigT<ConfigT, true> {
+    using type = typename ConfigT::type;
+  };
+
+  
 #endif
+
+  template<typename ELEMENT>
+  class FieldStorageBase : public Kripke::Core::DomainVar {
+    public:
+      explicit FieldStorageBase(Kripke::Core::Set const &spanned_set) :
+        m_set(&spanned_set)
+      {}
+
+      virtual ~FieldStorageBase() {}
+
+      RAJA_INLINE
+      Kripke::Core::Set const &getSet() const {
+        return *m_set;
+      }
+
+      /**
+       * Returns the number of elements in this subdomain.
+       */
+      RAJA_INLINE
+      size_t size(Kripke::SdomId sdom_id) const {
+        size_t chunk_id = Kripke::Core::DomainVar::m_subdomain_to_chunk[*sdom_id];
+        return m_chunk_to_size[chunk_id];
+      }
+
+      /**
+       * Returns the total number of elements in all subdomains.
+       */
+      RAJA_INLINE
+      size_t size() const {
+        size_t size = 0;
+        for(size_t chunk_id = 0; chunk_id < m_chunk_to_size.size(); ++chunk_id)
+          size += m_chunk_to_size[chunk_id];
+        return size;
+      }
+
+      /**
+       * Returns the storage size in this subdomain.
+       */
+      RAJA_INLINE
+      size_t storage_size(Kripke::SdomId sdom_id) const {
+        size_t chunk_id = Kripke::Core::DomainVar::m_subdomain_to_chunk[*sdom_id];
+        return m_chunk_to_storage_size[chunk_id];
+      }
+
+      /**
+       * Returns the total storage size in all subdomains.
+       */
+      RAJA_INLINE
+      size_t storage_size() const {
+        size_t storage_size = 0;
+        for(size_t chunk_id = 0; chunk_id < m_chunk_to_storage_size.size(); ++chunk_id)
+          storage_size += m_chunk_to_storage_size[chunk_id];
+        return storage_size;
+      }
+
+    protected:
+      Kripke::Core::Set const * m_set;
+      std::vector<size_t> m_chunk_to_size;
+      std::vector<size_t> m_chunk_to_storage_size;
+  };
 
   /**
    * Base class for Field which provides storage allocation
    */
 #if defined(KRIPKE_USE_ZFP)
   template<typename ConfigT, unsigned int N>
+  class FieldStorage : public FieldStorageBase< typename ElementTypeFromConfigT<ConfigT>::type > {
 #else
   template<typename ELEMENT>
+  class FieldStorage : public FieldStorageBase< ELEMENT > {
 #endif
-  class FieldStorage : public Kripke::Core::DomainVar {
     public:
 
 #if defined(KRIPKE_USE_ZFP)
@@ -377,16 +465,19 @@ namespace Core {
       using Layout1dType = RAJA::TypedLayout<RAJA::Index_type, camp::tuple<RAJA::Index_type>>;
       using View1dType = RAJA::View<ElementType, Layout1dType, ViewPtr>;
 
+      using Base = Kripke::Core::FieldStorageBase< ElementType >;
+
       explicit FieldStorage(Kripke::Core::Set const &spanned_set) :
-        m_set(&spanned_set)
+        Base(spanned_set)
       {
 
         // initialize our decomposition to match that of the specified set
-        setup_initChunks(spanned_set);
+        Kripke::Core::DomainVar::setup_initChunks(spanned_set);
 
         // allocate all of our chunks, and create layouts for each one
-        size_t num_chunks = m_chunk_to_subdomain.size();
-        m_chunk_to_size.resize(num_chunks, 0);
+        size_t num_chunks = Kripke::Core::DomainVar::m_chunk_to_subdomain.size();
+        Base::m_chunk_to_size.resize(num_chunks, 0);
+        Base::m_chunk_to_storage_size.resize(num_chunks, 0);
 #if defined(KRIPKE_USE_CHAI)
         m_chunk_to_data.resize(num_chunks);
 #else
@@ -399,10 +490,10 @@ namespace Core {
         for(size_t chunk_id = 0;chunk_id < num_chunks;++ chunk_id){
 
           // Get the size of the subdomain from the set
-          SdomId sdom_id(m_chunk_to_subdomain[chunk_id]);
+          SdomId sdom_id(Kripke::Core::DomainVar::m_chunk_to_subdomain[chunk_id]);
           size_t sdom_size = spanned_set.size(sdom_id);
 
-          m_chunk_to_size[chunk_id] = sdom_size;
+          Base::m_chunk_to_size[chunk_id] = sdom_size;
 #if defined(KRIPKE_USE_CHAI)
           m_chunk_to_data[chunk_id].allocate(sdom_size, chai::CPU,
               [=](chai::Action action, chai::ExecutionSpace space, size_t bytes){
@@ -455,15 +546,6 @@ namespace Core {
       FieldStorage(FieldStorage<ElementType> const &) = delete;
 #endif
 
-      /**
-       * Returns the number of elements in this subdomain.
-       */
-      RAJA_INLINE
-      size_t size(Kripke::SdomId sdom_id) const {
-        size_t chunk_id = m_subdomain_to_chunk[*sdom_id];
-        return m_chunk_to_size[chunk_id];
-      }
-
 
       RAJA_INLINE
       View1dType getView1d(Kripke::SdomId sdom_id) const {
@@ -472,14 +554,14 @@ namespace Core {
         printf("In FieldStorage::getView1d()\n");
 #endif
 
-        size_t chunk_id = m_subdomain_to_chunk[*sdom_id];
+        size_t chunk_id = Kripke::Core::DomainVar::m_subdomain_to_chunk[*sdom_id];
 
 #if defined(KRIPKE_USE_ZFP)
         ElementPtr ptr = m_chunk_to_base_ptr[chunk_id];
 #else
         ElementPtr ptr = m_chunk_to_data[chunk_id];
 #endif
-        size_t sdom_size = m_chunk_to_size[chunk_id];
+        size_t sdom_size = Base::m_chunk_to_size[chunk_id];
 
         return View1dType(ptr, Layout1dType(sdom_size));
       }
@@ -491,11 +573,11 @@ namespace Core {
         printf("In FieldStorage::getData()\n");
 #endif
 
-        KRIPKE_ASSERT(*sdom_id < (int)m_subdomain_to_chunk.size(),
+        KRIPKE_ASSERT(*sdom_id < (int)Kripke::Core::DomainVar::m_subdomain_to_chunk.size(),
             "sdom_id(%d) >= num_subdomains(%d)",
             (int)*sdom_id,
-            (int)(int)m_subdomain_to_chunk.size());
-        size_t chunk_id = m_subdomain_to_chunk[*sdom_id];
+            (int)(int)Kripke::Core::DomainVar::m_subdomain_to_chunk.size());
+        size_t chunk_id = Kripke::Core::DomainVar::m_subdomain_to_chunk[*sdom_id];
 
 
 #if defined(KRIPKE_USE_CHAI)
@@ -509,14 +591,7 @@ namespace Core {
       }
 
 
-      RAJA_INLINE
-      Kripke::Core::Set const &getSet() const {
-        return *m_set;
-      }
-
     protected:
-      Kripke::Core::Set const *m_set;
-      std::vector<size_t> m_chunk_to_size;
 #if defined(KRIPKE_USE_ZFP)
       std::vector<StoragePtr> m_chunk_to_data;
       std::vector<ElementPtr> m_chunk_to_base_ptr;
@@ -537,19 +612,19 @@ namespace Core {
     public:
 
 #if defined(KRIPKE_USE_ZFP)
-      using Parent = Kripke::Core::FieldStorage<ELEMENT, sizeof...(IDX_TYPES)>;
+      using Base = Kripke::Core::FieldStorage<ELEMENT, sizeof...(IDX_TYPES)>;
 #else
-      using Parent = Kripke::Core::FieldStorage<ELEMENT>;
+      using Base = Kripke::Core::FieldStorage<ELEMENT>;
 #endif
 
-      using ElementType = typename Parent::ElementType;
-      using ElementPtr = typename Parent::ElementPtr;
-      using ElementRef = typename Parent::ElementRef;
-      using ViewPtr = typename Parent::ViewPtr;
+      using ElementType = typename Base::ElementType;
+      using ElementPtr = typename Base::ElementPtr;
+      using ElementRef = typename Base::ElementRef;
+      using ViewPtr = typename Base::ViewPtr;
 #if defined(KRIPKE_USE_ZFP)
-      using StorageHelper = typename Parent::StorageHelper;
-      using ConfigType = typename Parent::ConfigType;
-      using StoragePtr = typename Parent::StoragePtr;
+      using StorageHelper = typename Base::StorageHelper;
+      using ConfigType = typename Base::ConfigType;
+      using StoragePtr = typename Base::StoragePtr;
 #endif
 
       static constexpr size_t NumDims = sizeof...(IDX_TYPES);
@@ -560,7 +635,7 @@ namespace Core {
 
       template<typename Order>
       Field(Kripke::Core::Set const &spanned_set, Order) :
-        Parent(spanned_set)
+        Base(spanned_set)
       {
 
         KRIPKE_ASSERT(NumDims == spanned_set.getNumDimensions(),
@@ -570,13 +645,13 @@ namespace Core {
         auto perm = LayoutInfo<Order, IDX_TYPES...>::getPermutation();
 
         // create layouts for each chunk
-        size_t num_chunks = Parent::m_chunk_to_subdomain.size();
+        size_t num_chunks = Kripke::Core::DomainVar::m_chunk_to_subdomain.size();
         m_chunk_to_layout.resize(num_chunks);
         for(size_t chunk_id = 0;chunk_id < num_chunks;++ chunk_id){
 
           // Create a layout using dim sizes from the Set, and permutation
           // defined by the layout function
-          SdomId sdom_id(Parent::m_chunk_to_subdomain[chunk_id]);
+          SdomId sdom_id(Kripke::Core::DomainVar::m_chunk_to_subdomain[chunk_id]);
           std::array<RAJA::Index_type, NumDims> sizes;
           for(size_t dim = 0;dim < NumDims;++ dim){
             sizes[dim] = spanned_set.dimSize(sdom_id, dim);
@@ -587,7 +662,11 @@ namespace Core {
           layout = RAJA::make_permuted_layout<NumDims,RAJA::Index_type>(sizes, perm);
 
 #if defined(KRIPKE_USE_ZFP)
-          StorageHelper::layout(Parent::m_chunk_to_data[chunk_id], Parent::m_chunk_to_base_ptr[chunk_id], layout);
+          Base::Base::m_chunk_to_storage_size[chunk_id] = StorageHelper::layout(
+              Base::m_chunk_to_data[chunk_id], Base::m_chunk_to_base_ptr[chunk_id], layout
+          );
+#else
+          Base::Base::m_chunk_to_storage_size[chunk_id] = Base::Base::m_chunk_to_size[chunk_id] * sizeof(ElementType);
 #endif
         }
       }
@@ -605,12 +684,12 @@ namespace Core {
         printf("In Field::getView()\n");
 #endif
 
-        size_t chunk_id = Parent::m_subdomain_to_chunk[*sdom_id];
+        size_t chunk_id = Kripke::Core::DomainVar::m_subdomain_to_chunk[*sdom_id];
 
 #if defined(KRIPKE_USE_ZFP)
-        ElementPtr ptr = Parent::m_chunk_to_base_ptr[chunk_id];
+        ElementPtr ptr = Base::m_chunk_to_base_ptr[chunk_id];
 #else
-        ElementPtr ptr = Parent::m_chunk_to_data[chunk_id];
+        ElementPtr ptr = Base::m_chunk_to_data[chunk_id];
 #endif
         auto layout = m_chunk_to_layout[chunk_id];
 
@@ -628,12 +707,12 @@ namespace Core {
         printf("In Field::getViewOrder()\n");
 #endif
 
-        size_t chunk_id = Parent::m_subdomain_to_chunk[*sdom_id];
+        size_t chunk_id = Kripke::Core::DomainVar::m_subdomain_to_chunk[*sdom_id];
 
 #if defined(KRIPKE_USE_ZFP)
-        ElementPtr ptr = Parent::m_chunk_to_base_ptr[chunk_id];
+        ElementPtr ptr = Base::m_chunk_to_base_ptr[chunk_id];
 #else
-        ElementPtr ptr = Parent::m_chunk_to_data[chunk_id];
+        ElementPtr ptr = Base::m_chunk_to_data[chunk_id];
 #endif
 
         using LInfo = LayoutInfo<Order, IDX_TYPES...>;
@@ -650,26 +729,26 @@ namespace Core {
       void dump() const {
         printf("Field<>:\n");
         printf("  name:  %s\n", BaseVar::getName().c_str());
-        printf("  m_set: %p\n", Parent::m_set);
+        printf("  m_set: %p\n", Base::Base::m_set);
 
         printf("  m_chunk_to_size: ");
-        for(auto x : Parent::m_chunk_to_size){printf("%lu ", (unsigned long)x);}
+        for(auto x : Base::Base::m_chunk_to_size){printf("%lu ", (unsigned long)x);}
         printf("\n");
 
 #if !defined(KRIPKE_USE_CHAI)
         printf("  m_chunk_to_data: ");
-        for(auto x : Parent::m_chunk_to_data){printf("%p ", x);}
+        for(auto x : Base::m_chunk_to_data){printf("%p ", x);}
         printf("\n");
 #endif
 
-        for(size_t chunk_id = 0;chunk_id < Parent::m_chunk_to_data.size();++ chunk_id){
+        for(size_t chunk_id = 0;chunk_id < Base::m_chunk_to_data.size();++ chunk_id){
 
-          SdomId sdom_id(DomainVar::m_chunk_to_subdomain[chunk_id]);
+          SdomId sdom_id(Kripke::Core::DomainVar::m_chunk_to_subdomain[chunk_id]);
 
-          ElementType *ptr = Parent::getData(sdom_id);
+          ElementType *ptr = Base::getData(sdom_id);
 
           printf("Chunk %d Data: ", (int)chunk_id);
-          for(size_t i = 0;i < Parent::m_chunk_to_size[chunk_id];++ i){
+          for(size_t i = 0;i < Base::Base::m_chunk_to_size[chunk_id];++ i){
             printf(" %e", ptr[i]);
           }
           printf("\n");

@@ -84,19 +84,11 @@ void Kripke::generateProblem(Kripke::Core::DataStore &data_store,
 
     // Collect variables that are Fields of doubles
     std::vector<std::string> field_names;
-#if !defined(KRIPKE_USE_ZFP)
     for(auto const &var_name : data_store.getVariableList()){
-      if(data_store.isVariableType<FieldStorage<double>>(var_name)){
+      if(data_store.isVariableType<FieldStorageBase<double>>(var_name)){
         field_names.push_back(var_name);
       }
     }
-#else
-    // TODO FieldStorage<double> is not defined when ZFP is enable.
-    //       Can we replace that by something like:
-    //          data_store.isFieldOfType<double>(var_name)
-    //       Or better (maybe):
-    //          data_store.isFloatingPointField(var_name)
-#endif
 
     std::sort(field_names.begin(), field_names.end());
 
@@ -106,27 +98,24 @@ void Kripke::generateProblem(Kripke::Core::DataStore &data_store,
     printf("  --------------            ------------    ---------\n");
 
     unsigned long total_size = 0;
+    double total_storage_size = 0.;
     for(auto const &field_name : field_names){
 
-#if !defined(KRIPKE_USE_ZFP)
-      unsigned long field_size = data_store.getVariable<FieldStorage<double>>(field_name).getSet().globalSize();
+      unsigned long field_size = data_store.getVariable<FieldStorageBase<double>>(field_name).size();
+      double field_storage_size = data_store.getVariable<FieldStorageBase<double>>(field_name).storage_size();
       total_size += field_size;
+      total_storage_size += field_storage_size;
 
       printf("  %-24s  %12lu %12.3lf\n",
           field_name.c_str(),
           field_size,
-          (double)field_size*8.0/1024.0/1024.0);
-#else
-    // TODO FieldStorage<double> is not defined when ZFP is enable.
-    //       Can we replace that by something like:
-    //          data_store.getStorageSize(field_name)
-#endif
+          field_storage_size/1024.0/1024.0);
     }
 
     printf("  --------                  ------------    ---------\n");
     printf("  TOTAL                     %12lu %12.3lf\n",
         total_size,
-        (double)total_size*8.0/1024.0/1024.0);
+        total_storage_size/1024.0/1024.0);
 
     printf("\n");
     printf("  Generation Complete!\n");
