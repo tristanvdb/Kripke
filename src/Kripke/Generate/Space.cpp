@@ -333,7 +333,8 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
             mixelem += MixElem{1};
           }
         }
-        KRIPKE_ASSERT(zone_frac == 1.0, "Zone fraction wrong: %e", zone_frac);
+	KRIPKE_ASSERT(std::abs(zone_frac-1.0)<5000*std::numeric_limits<double>::epsilon(), "Zone fraction wrong: %20.14e, %20.14e, %20.14e\n", zone_frac, zone_frac-double{1}, 5000*std::numeric_limits<double>::epsilon());
+        //KRIPKE_ASSERT(zone_frac == 1.0, "Zone fraction wrong: %e", zone_frac);
         zone_to_num_mixelem(z) = num_zone_mix;
     });
 
