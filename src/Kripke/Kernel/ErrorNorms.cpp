@@ -54,7 +54,8 @@ struct ErrorNormsSdom {
 		  Kripke::Core::DataStore &data_store,
                   double                  *max_nrm_ptr,
                   double                  *l1_nrm_ptr,
-                  double                  *l2_nrm_ptr) const
+                  double                  *l2_nrm_ptr,
+		  double                  *vol_grp) const
   {
 
     using PopulationPolicy = Kripke::Arch::Policy_Population<AL>; // use population's policy to only to grab the reduction policy, avoids needing new policy for errornorms
@@ -105,12 +106,13 @@ struct ErrorNormsSdom {
     RAJA::ReduceMax<ReducePolicy, double> max_nrm_red(0.0);
     RAJA::ReduceSum<ReducePolicy, double> l1_nrm_red(0.0);
     RAJA::ReduceSum<ReducePolicy, double> l2_nrm_red(0.0);
+    RAJA::ReduceSum<ReducePolicy, double> vol_grp_red(0.0);
 
     Problem_3<double> ksn_problem;
     Direction d0{0};
-    int id = view_id(d0);
-    int jd = view_jd(d0);
-    int kd = view_kd(d0);
+    //int id = view_id(d0);
+    //int jd = view_jd(d0);
+    //int kd = view_kd(d0);
     
     RAJA::kernel<ExecPolicy>(
 			     camp::make_tuple(
@@ -125,9 +127,9 @@ struct ErrorNormsSdom {
 			     KRIPKE_LAMBDA (Direction d, Group g, ZoneK k, ZoneJ j, ZoneI i) {
 
 
-			       double xz = -15  + dx(i)*global_i0 + dx(i)*(double(*i)+0.5);
-			       double yz = -25 + dy(j)*global_j0 + dy(j)*(double(*j)+0.5);
-			       double zz = -15  + dz(k)*global_k0 + dz(k)*(double(*k)+0.5);
+			       double xz = -60  + dx(i)*global_i0 + dx(i)*(double(*i)+0.5);
+			       double yz = -100 + dy(j)*global_j0 + dy(j)*(double(*j)+0.5);
+			       double zz = -60  + dz(k)*global_k0 + dz(k)*(double(*k)+0.5);
 
 			       Zone z(zone_layout(*i, *j, *k));
 			       double psi_exact = compute_exact_solution<double>(xz,yz,zz,
@@ -146,7 +148,7 @@ struct ErrorNormsSdom {
 			       max_nrm_red.max(err);
 			       l1_nrm_red += w(d) * volume(z) * err;
 			       l2_nrm_red += w(d) * volume(z) * err * err;
-			       
+			       vol_grp_red += w(d) * volume(z);
 			     }
 			     );
     
@@ -154,6 +156,7 @@ struct ErrorNormsSdom {
     *max_nrm_ptr = fmax(*max_nrm_ptr,(double) max_nrm_red);
     *l1_nrm_ptr += (double) l1_nrm_red;
     *l2_nrm_ptr += (double) l2_nrm_red;
+    *vol_grp += (double) vol_grp_red;
   }
 
 };
@@ -172,28 +175,28 @@ void Kripke::Kernel::error_norms(Kripke::Core::DataStore &data_store)
   double max_norm = 0.0;
   double l1_norm = 0.0;
   double l2_norm = 0.0;
+  double vol_grp = 0.0;
   auto &field_psi = data_store.getVariable<Kripke::Field_Flux>("psi");
     
   for (Kripke::SdomId sdom_id : field_psi.getWorkList()){
 
     Kripke::dispatch(al_v, ErrorNormsSdom{}, sdom_id,
 		     data_store,
-                     &max_norm, &l1_norm, &l2_norm);
+                     &max_norm, &l1_norm, &l2_norm, &vol_grp);
   }
 
   // reduce
   auto const &comm = data_store.getVariable<Kripke::Core::Comm>("comm");
 #if 0
   double g_max_norm = comm.allReduceMaxDouble(max_norm);
-  double g_l1_norm = comm.allReduceSumDouble(l1_norm);
-  double g_l2_norm = std::sqrt(comm.allReduceSumDouble(l2_norm));
 #else
   double g_max_norm = max_norm;
-  double g_l1_norm = l1_norm/(120*120*200*4*M_PI);
-  double g_l2_norm = std::sqrt(l2_norm/(120*120*200*4*M_PI));
 #endif
+  double g_l1_norm = comm.allReduceSumDouble(l1_norm)/vol_grp;
+  double g_l2_norm = std::sqrt(comm.allReduceSumDouble(l2_norm)/vol_grp);
+
   if(comm.rank() == 0){
-    printf("  errors(max, l1, l2) : %18.12e, %18.12e, %18.12e\n", g_max_norm, g_l1_norm, g_l2_norm);
+    printf("  errors(max, l2, l1) : %18.12e, %18.12e, %18.12e\n", g_max_norm, g_l2_norm, g_l1_norm);
     fflush(stdout);
   }
   

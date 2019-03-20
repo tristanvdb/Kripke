@@ -56,14 +56,17 @@ InputVariables::InputVariables() :
   niter(10),
   parallel_method(PMETHOD_SWEEP),
   num_material_subsamples(40),
-  run_name("kripke")
+  run_name("kripke"),
+  compute_errors(false)
 #ifdef KRIPKE_USE_ZFP
   // I, KKC, freely acknowldge that this ifdef block in a ctor initializer list is an abomination.
   ,
   psi_zfp_rate{64},
   psi_cached_zfp_blocks{1024},
   phi_zfp_rate{64},
-  phi_cached_zfp_blocks{1024}
+  phi_cached_zfp_blocks{1024},
+  default_zfp_rate{64},
+  default_cached_zfp_blocks{1024}
 #endif
 {
   num_zonesets_dim[0] = 1; 
@@ -158,6 +161,16 @@ bool InputVariables::checkValues(void) const{
   if ( !psi_cached_zfp_blocks ) {
     if (!rank)
       printf("The zfp number of cached blocks the phi array (%i) must be >=1\n", phi_cached_zfp_blocks);
+  }
+
+  if ( !default_cached_zfp_blocks ) {
+    if (!rank)
+      printf("The default zfp number of cached blocks (%i) must be >=1\n", psi_cached_zfp_blocks);
+  }
+
+  if ( !default_zfp_rate ) {
+    if (!rank)
+      printf("The default zfp compression rate (%f) must be >=1.0\n", phi_zfp_rate);
   }
 #endif
   

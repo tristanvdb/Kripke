@@ -71,12 +71,15 @@ struct InputVariables {
   
   // Output Options
   std::string run_name;         // Name to use when generating output files
+  bool compute_errors;          // comute error norms relative to the KSN problem 3i (no scattering) solution
   
 #ifdef KRIPKE_USE_ZFP
   double psi_zfp_rate;
   size_t psi_cached_zfp_blocks;
   double phi_zfp_rate;
   size_t phi_cached_zfp_blocks;
+  double default_zfp_rate;
+  size_t default_cached_zfp_blocks;
 #endif
   
 };

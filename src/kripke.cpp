@@ -394,6 +394,9 @@ int main(int argc, char **argv) {
     else if(opt == "--layout"){
       vars.al_v.layout_v = Kripke::stringToLayout(cmd.pop());     
     }
+    else if(opt == "--compute_errors"){
+      vars.compute_errors = true;
+    }
 #ifdef KRIPKE_USE_ZFP
     else if(opt == "--zfp_psi_rate") {
       vars.psi_zfp_rate = std::atof(cmd.pop().c_str());
@@ -406,6 +409,12 @@ int main(int argc, char **argv) {
     } 
     else if(opt == "--zfp_phi_cache") {
       vars.phi_cached_zfp_blocks = std::atoi(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_default_rate") {
+      vars.default_zfp_rate = std::atof(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_default_cache") {
+      vars.default_cached_zfp_blocks = std::atoi(cmd.pop().c_str());
     } 
 #endif
     else{
@@ -482,6 +491,8 @@ int main(int argc, char **argv) {
     printf("    psi blocks cached: %lu\n", vars.psi_cached_zfp_blocks);
     printf("    phi compression rate: %f\n", vars.phi_zfp_rate);
     printf("    phi blocks cached: %lu\n", vars.phi_cached_zfp_blocks);
+    printf("    default compression rate: %f\n", vars.default_zfp_rate);
+    printf("    default blocks cached: %lu\n", vars.default_cached_zfp_blocks);
 #endif    
     
   }
@@ -494,7 +505,7 @@ int main(int argc, char **argv) {
   Kripke::generateProblem(data_store, vars);
 
   // Run the solver
-  Kripke::SteadyStateSolver(data_store, vars.niter, vars.parallel_method == PMETHOD_BJ);
+  Kripke::SteadyStateSolver(data_store, vars.niter, vars.parallel_method == PMETHOD_BJ, vars.compute_errors);
 
   // Print Timing Info
   auto &timing = data_store.getVariable<Kripke::Timing>("timing");

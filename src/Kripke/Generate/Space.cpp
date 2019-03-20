@@ -132,14 +132,14 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
    * y:  -100.0  to 100.0
    * z:   -60.0  to  60.0
    */
-  double const x_min = -15.0;
-  double const x_max = 15.0;
+  double const x_min = -60.0;
+  double const x_max = 60.0;
 
-  double const y_min = -25.0;
-  double const y_max = 25.0;
+  double const y_min = -100.0;
+  double const y_max = 100.0;
 
-  double const z_min = -15.0;
-  double const z_max = 15.0;
+  double const z_min = -60.0;
+  double const z_max = 60.0;
 
 
   auto &field_dx = createField<Field_ZoneI2Double>(data_store, "dx", al_v, set_zonei);

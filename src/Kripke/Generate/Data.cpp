@@ -48,6 +48,8 @@ double double_zfp_psi::zfp_rate{64};
 size_t double_zfp_psi::cached_zfp_blocks{1024};
 double double_zfp_phi::zfp_rate{64};
 size_t double_zfp_phi::cached_zfp_blocks{1024};
+double double_zfp_exclude_1_fast::zfp_rate{64};
+size_t double_zfp_exclude_1_fast::cached_zfp_blocks{1024};
 #endif
 
 void Kripke::Generate::generateData(Kripke::Core::DataStore &data_store,

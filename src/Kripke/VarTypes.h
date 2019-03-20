@@ -86,11 +86,11 @@ namespace Kripke {
   //         -> we exclude dimension *after* the layout is applied
   //    - `zfp_fast_dims` refers to whether we put the faster or upper dimensions form the ZFP array
   //         -> `zfp_fast_dims == true` => the faster dimension are used
-  struct double_zfp_rate_16_exclude_1_fast : public Kripke::Core::field_storage_config {
+  struct double_zfp_exclude_1_fast : public Kripke::Core::field_storage_config {
     using type = double;
-    constexpr static double zfp_rate = _ZFP_RATE;//16.;
+    static double zfp_rate;// initialized in Generate/Data.cpp
+    static size_t cached_zfp_blocks; // initialized in Generate/Data.cpp
     constexpr static size_t exclude = 1;
-    constexpr static size_t cached_zfp_blocks = 2048;// dont' know what to put here...
     constexpr static size_t zfp_fast_dims = true;
   };
 #endif
@@ -123,7 +123,7 @@ namespace Kripke {
 //using Field_Moments_phi_out = Field_Moments; // updates in: Scattering, Source
 
 #if TEST_ZFP_ARRAY_OF_ARRAY
-  using type_for_Field_IPlane = double_zfp_rate_16_exclude_1_fast;
+  using type_for_Field_IPlane = double_zfp_exclude_1_fast;
 #else
   using type_for_Field_IPlane = double;
 #endif
@@ -134,7 +134,7 @@ namespace Kripke {
 #if TEST_MORE_ZFP_ARRAY_OF_ARRAY
   using type_for_Field_JPlane = double_zfp_rate_16_exclude_2_fast;
 #elif TEST_ZFP_ARRAY_OF_ARRAY
-  using type_for_Field_JPlane = double_zfp_rate_16_exclude_1_fast;
+  using type_for_Field_JPlane = double_zfp_exclude_1_fast;
 #else
   using type_for_Field_JPlane = double;
 #endif
@@ -144,7 +144,7 @@ namespace Kripke {
 #if TEST_MORE_ZFP_ARRAY_OF_ARRAY
   using type_for_Field_KPlane = double_zfp_rate_16_exclude_2_slow;
 #elif TEST_ZFP_ARRAY_OF_ARRAY
-  using type_for_Field_KPlane = double_zfp_rate_16_exclude_1_fast;
+  using type_for_Field_KPlane = double_zfp_exclude_1_fast;
 #else
   using type_for_Field_KPlane = double;
 #endif
