@@ -55,6 +55,9 @@ struct ErrorNormsSdom {
                   double                  *max_nrm_ptr,
                   double                  *l1_nrm_ptr,
                   double                  *l2_nrm_ptr,
+                  double                  *max_sol_nrm_ptr,
+                  double                  *l1_sol_nrm_ptr,
+                  double                  *l2_sol_nrm_ptr,
 		  double                  *vol_grp) const
   {
 
@@ -106,6 +109,9 @@ struct ErrorNormsSdom {
     RAJA::ReduceMax<ReducePolicy, double> max_nrm_red(0.0);
     RAJA::ReduceSum<ReducePolicy, double> l1_nrm_red(0.0);
     RAJA::ReduceSum<ReducePolicy, double> l2_nrm_red(0.0);
+    RAJA::ReduceMax<ReducePolicy, double> max_sol_nrm_red(0.0);
+    RAJA::ReduceSum<ReducePolicy, double> l1_sol_nrm_red(0.0);
+    RAJA::ReduceSum<ReducePolicy, double> l2_sol_nrm_red(0.0);
     RAJA::ReduceSum<ReducePolicy, double> vol_grp_red(0.0);
 
     Problem_3<double> ksn_problem;
@@ -148,6 +154,11 @@ struct ErrorNormsSdom {
 			       max_nrm_red.max(err);
 			       l1_nrm_red += w(d) * volume(z) * err;
 			       l2_nrm_red += w(d) * volume(z) * err * err;
+
+			       max_sol_nrm_red.max(std::abs(psi(d,g,z)));
+			       l1_sol_nrm_red += w(d) * volume(z) * std::abs(psi(d,g,z));
+			       l2_sol_nrm_red += w(d) * volume(z) * std::abs(psi(d,g,z)) * std::abs(psi(d,g,z));
+
 			       vol_grp_red += w(d) * volume(z);
 			     }
 			     );
@@ -156,6 +167,11 @@ struct ErrorNormsSdom {
     *max_nrm_ptr = fmax(*max_nrm_ptr,(double) max_nrm_red);
     *l1_nrm_ptr += (double) l1_nrm_red;
     *l2_nrm_ptr += (double) l2_nrm_red;
+
+    *max_sol_nrm_ptr = fmax(*max_sol_nrm_ptr,(double) max_sol_nrm_red);
+    *l1_sol_nrm_ptr += (double) l1_sol_nrm_red;
+    *l2_sol_nrm_ptr += (double) l2_sol_nrm_red;
+
     *vol_grp += (double) vol_grp_red;
   }
 
@@ -175,6 +191,9 @@ void Kripke::Kernel::error_norms(Kripke::Core::DataStore &data_store)
   double max_norm = 0.0;
   double l1_norm = 0.0;
   double l2_norm = 0.0;
+  double max_sol_norm = 0.0;
+  double l1_sol_norm = 0.0;
+  double l2_sol_norm = 0.0;
   double vol_grp = 0.0;
   auto &field_psi = data_store.getVariable<Kripke::Field_Flux>("psi");
     
@@ -182,21 +201,27 @@ void Kripke::Kernel::error_norms(Kripke::Core::DataStore &data_store)
 
     Kripke::dispatch(al_v, ErrorNormsSdom{}, sdom_id,
 		     data_store,
-                     &max_norm, &l1_norm, &l2_norm, &vol_grp);
+                     &max_norm, &l1_norm, &l2_norm, &max_sol_norm, &l1_sol_norm, &l2_sol_norm, &vol_grp);
   }
 
   // reduce
   auto const &comm = data_store.getVariable<Kripke::Core::Comm>("comm");
 #if 0
   double g_max_norm = comm.allReduceMaxDouble(max_norm);
+  double g_max_sol_norm = comm.allReduceMaxDouble(max_sol_norm);
 #else
   double g_max_norm = max_norm;
+  double g_max_sol_norm = max_sol_norm;
 #endif
   double g_l1_norm = comm.allReduceSumDouble(l1_norm)/vol_grp;
   double g_l2_norm = std::sqrt(comm.allReduceSumDouble(l2_norm)/vol_grp);
 
+  double g_l1_sol_norm = comm.allReduceSumDouble(l1_sol_norm)/vol_grp;
+  double g_l2_sol_norm = std::sqrt(comm.allReduceSumDouble(l2_sol_norm)/vol_grp);
+
   if(comm.rank() == 0){
     printf("  errors(max, l2, l1) : %18.12e, %18.12e, %18.12e\n", g_max_norm, g_l2_norm, g_l1_norm);
+    printf("  solution(max, l2, l1) : %18.12e, %18.12e, %18.12e\n", g_max_sol_norm, g_l2_sol_norm, g_l1_sol_norm);
     fflush(stdout);
   }
   
