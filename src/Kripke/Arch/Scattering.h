@@ -49,7 +49,7 @@ struct Policy_Scattering<ArchLayoutT<ArchT_Sequential, LayoutT_DGZ>> {
         For<0, loop_exec, // moment
           For<1, loop_exec, // dst group
             For<2, loop_exec, // src group
-              Collapse<loop_exec, ArgList<5,4,3>, // zones i,j,k
+              Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
                 Lambda<0>
               >
             >
@@ -63,7 +63,7 @@ struct Policy_Scattering<ArchLayoutT<ArchT_Sequential, LayoutT_DZG>> {
   using ExecPolicy =
       KernelPolicy<
         For<0, loop_exec, // moment
-          For<3, loop_exec, // zone
+          Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
             For<1, loop_exec, // dst group
               For<2, loop_exec, // src group
                 Lambda<0>
@@ -82,7 +82,7 @@ struct Policy_Scattering<ArchLayoutT<ArchT_Sequential, LayoutT_GDZ>> {
         For<1, loop_exec, // dst group
           For<2, loop_exec, // src group
             For<0, loop_exec, // moment
-              For<3, loop_exec, // zone
+              Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
                 Lambda<0>
               >
             >
@@ -98,7 +98,7 @@ struct Policy_Scattering<ArchLayoutT<ArchT_Sequential, LayoutT_GZD>> {
       KernelPolicy<
         For<1, loop_exec, // dst group
           For<2, loop_exec, // src group
-            For<3, loop_exec, // zone
+            Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
               For<0, loop_exec, // moment
                 Lambda<0>
               >
@@ -113,7 +113,7 @@ template<>
 struct Policy_Scattering<ArchLayoutT<ArchT_Sequential, LayoutT_ZDG>> {
   using ExecPolicy =
       KernelPolicy<
-        For<3, loop_exec, // zone
+        Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
           For<0, loop_exec, // moment
             For<1, loop_exec, // dst group
               For<2, loop_exec, // src group
@@ -130,7 +130,7 @@ template<>
 struct Policy_Scattering<ArchLayoutT<ArchT_Sequential, LayoutT_ZGD>> {
   using ExecPolicy =
       KernelPolicy<
-        For<3, loop_exec, // zone
+        Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
           For<1, loop_exec, // dst group
             For<2, loop_exec, // src group
               For<0, loop_exec, // moment
@@ -151,7 +151,7 @@ struct Policy_Scattering<ArchLayoutT<ArchT_OpenMP, LayoutT_DGZ>> {
     KernelPolicy<
       Collapse<omp_parallel_collapse_exec, ArgList<0,1>, // Moment, DstGrp
         For<2, loop_exec, // SrcGrp
-          For<3, loop_exec, // Zone
+          Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
             Lambda<0>
           >
         >
@@ -163,7 +163,7 @@ template<>
 struct Policy_Scattering<ArchLayoutT<ArchT_OpenMP, LayoutT_DZG>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<0,3,1>, // Moment, Zone, DstGrp
+      Collapse<omp_parallel_collapse_exec, ArgList<0,5,4,3,1>, // Moment, Zones k:j:i, DstGrp
         For<2, loop_exec, // SrcGrp
           Lambda<0>
         >
@@ -178,7 +178,7 @@ struct Policy_Scattering<ArchLayoutT<ArchT_OpenMP, LayoutT_GDZ>> {
     KernelPolicy<
       Collapse<omp_parallel_collapse_exec, ArgList<1,0>, // DstGrp, Moment
         For<2, loop_exec, // SrcGrp
-          For<3, loop_exec, // Zone
+          Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
             Lambda<0>
           >
         >
@@ -191,7 +191,7 @@ template<>
 struct Policy_Scattering<ArchLayoutT<ArchT_OpenMP, LayoutT_GZD>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<1,3>, // DstGrp, Zone
+      Collapse<omp_parallel_collapse_exec, ArgList<1,5,4,3>, // DstGrp, Zones k:j:i
         For<2, loop_exec, // SrcGrp
           For<0, loop_exec, // Moment
             Lambda<0>
@@ -206,7 +206,7 @@ template<>
 struct Policy_Scattering<ArchLayoutT<ArchT_OpenMP, LayoutT_ZDG>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<3,0,1>, // Zone, Moment, DstGrp
+      Collapse<omp_parallel_collapse_exec, ArgList<5,4,3,0,1>, // Zones k:j:i, Moment, DstGrp
         For<2, loop_exec, // SrcGrp
           Lambda<0>
         >
@@ -219,7 +219,7 @@ template<>
 struct Policy_Scattering<ArchLayoutT<ArchT_OpenMP, LayoutT_ZGD>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<3,1>, // Zone, DstGrp
+      Collapse<omp_parallel_collapse_exec, ArgList<5,4,3,1>, // Zones k:j:i, DstGrp
         For<2, loop_exec, // SrcGrp
           For<0, loop_exec, // Moment
             Lambda<0>

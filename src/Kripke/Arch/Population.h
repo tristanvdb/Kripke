@@ -51,7 +51,7 @@ struct Policy_Population<ArchLayoutT<ArchT_Sequential, LayoutT_DGZ>>{
     KernelPolicy<
       For<0, loop_exec, // direction
         For<1, loop_exec, // group
-          Collapse<loop_exec, ArgList<4,3,2>, // zones i,j,k
+          Collapse<loop_exec, ArgList<4,3,2>, // Zones k:j:i
             Lambda<0>
           >
         >
@@ -66,7 +66,7 @@ struct Policy_Population<ArchLayoutT<ArchT_Sequential, LayoutT_DZG>>{
   using ExecPolicy = 
     KernelPolicy<
       For<0, loop_exec, // direction
-        For<2, loop_exec, // zone
+        Collapse<loop_exec, ArgList<4,3,2>, // Zones k:j:i
           For<1, loop_exec, // group
             Lambda<0>
           >
@@ -83,7 +83,7 @@ struct Policy_Population<ArchLayoutT<ArchT_Sequential, LayoutT_GDZ>>{
     KernelPolicy<
       For<1, loop_exec, // group
         For<0, loop_exec, // direction
-          For<2, loop_exec, // zone
+          Collapse<loop_exec, ArgList<4,3,2>, // Zones k:j:i
             Lambda<0>
           >
         >
@@ -99,7 +99,7 @@ struct Policy_Population<ArchLayoutT<ArchT_Sequential, LayoutT_GZD>>{
   using ExecPolicy = 
     KernelPolicy<
       For<1, loop_exec, // group
-        For<2, loop_exec, // zone
+        Collapse<loop_exec, ArgList<4,3,2>, // Zones k:j:i
           For<0, loop_exec, // direction
             Lambda<0>
           >
@@ -114,7 +114,7 @@ struct Policy_Population<ArchLayoutT<ArchT_Sequential, LayoutT_ZDG>>{
   
   using ExecPolicy = 
     KernelPolicy<
-      For<2, loop_exec, // zone
+      Collapse<loop_exec, ArgList<4,3,2>, // Zones k:j:i
         For<0, loop_exec, // direction
           For<1, loop_exec, // group
             Lambda<0>
@@ -130,7 +130,7 @@ struct Policy_Population<ArchLayoutT<ArchT_Sequential, LayoutT_ZGD>>{
   
   using ExecPolicy = 
     KernelPolicy<
-      For<2, loop_exec, // zone
+      Collapse<loop_exec, ArgList<4,3,2>, // Zones k:j:i
         For<1, loop_exec, // group
           For<0, loop_exec, // direction
             Lambda<0>
@@ -150,7 +150,7 @@ struct Policy_Population<ArchLayoutT<ArchT_OpenMP, LayoutT_DGZ>>{
   using ExecPolicy =
     KernelPolicy<
       Collapse<omp_parallel_collapse_exec, ArgList<0,1>, // Direction Group
-        For<2, loop_exec, // Zone
+        Collapse<loop_exec, ArgList<4,3,2>, // Zones k:j:i
           Lambda<0>
         >
       >
@@ -163,7 +163,7 @@ struct Policy_Population<ArchLayoutT<ArchT_OpenMP, LayoutT_DZG>>{
 
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<0,2>, // Direction Zone
+      Collapse<omp_parallel_collapse_exec, ArgList<0,4,3,2>, // Direction Zones k:j:i
         For<1, loop_exec, // Group
           Lambda<0>
         >
@@ -178,7 +178,7 @@ struct Policy_Population<ArchLayoutT<ArchT_OpenMP, LayoutT_GDZ>>{
   using ExecPolicy =
     KernelPolicy<
       Collapse<omp_parallel_collapse_exec, ArgList<1,0>, // Group Direction
-        For<2, loop_exec, // Zone
+        Collapse<loop_exec, ArgList<4,3,2>, // Zones k:j:i
           Lambda<0>
         >
       >
@@ -192,7 +192,7 @@ struct Policy_Population<ArchLayoutT<ArchT_OpenMP, LayoutT_GZD>>{
 
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<1,2>, // Group Zone
+      Collapse<omp_parallel_collapse_exec, ArgList<1,4,3,2>, // Group Zones k:j:i
         For<0, loop_exec, // Direction
           Lambda<0>
         >
@@ -206,7 +206,7 @@ struct Policy_Population<ArchLayoutT<ArchT_OpenMP, LayoutT_ZDG>>{
 
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<2,0>, // Zone Direction
+      Collapse<omp_parallel_collapse_exec, ArgList<4,3,2,0>, // Zones k:j:i Direction
         For<1, loop_exec, // Group
           Lambda<0>
         >
@@ -220,7 +220,7 @@ struct Policy_Population<ArchLayoutT<ArchT_OpenMP, LayoutT_ZGD>>{
 
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<2,1>, // Zone Group
+      Collapse<omp_parallel_collapse_exec, ArgList<4,3,2,1>, // Zones k:j:i Group
         For<0, loop_exec, // Direction
           Lambda<0>
         >
