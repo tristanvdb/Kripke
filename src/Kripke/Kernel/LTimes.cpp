@@ -49,15 +49,15 @@ struct LTimesSdom {
   RAJA_INLINE
   void operator()(AL al, 
                   Kripke::SdomId sdom_id,
-                  Set const       &set_dir,
-                  Set const       &set_group,
-                  Set const       &set_zonei,
-                  Set const       &set_zonej,
-                  Set const       &set_zonek,
-                  Set const       &set_moment,
-                  Field_Flux      &field_psi,
-                  Field_Moments   &field_phi,
-                  Field_Ell       &field_ell) const
+                  Set const         &set_dir,
+                  Set const         &set_group,
+                  Set const         &set_zonei,
+                  Set const         &set_zonej,
+                  Set const         &set_zonek,
+                  Set const         &set_moment,
+                  Field_Flux_psi    &field_psi,
+                  Field_Moments_phi &field_phi,
+                  Field_Ell         &field_ell) const
   {
 
     using ExecPolicy = typename Kripke::Arch::Policy_LTimes<AL>::ExecPolicy;
@@ -119,8 +119,8 @@ void Kripke::Kernel::LTimes(Kripke::Core::DataStore &data_store)
   Set const &set_zonek  = data_store.getVariable<Set>("Set/ZoneK");
   Set const &set_moment = data_store.getVariable<Set>("Set/Moment");
 
-  auto &field_psi =       data_store.getVariable<Field_Flux>("psi");
-  auto &field_phi =       data_store.getVariable<Field_Moments>("phi");
+  auto &field_psi =       data_store.getVariable<Field_Flux_psi>("psi");
+  auto &field_phi =       data_store.getVariable<Field_Moments_phi>("phi");
   auto &field_ell =       data_store.getVariable<Field_Ell>("ell");
 
   // Loop over Subdomains

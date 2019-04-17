@@ -58,8 +58,8 @@ struct ScatteringSdom {
                   Set const               &set_zonej,
                   Set const               &set_zonek,
                   Set const               &set_moment,
-                  Field_Moments           &field_phi,
-                  Field_Moments           &field_phi_out,
+                  Field_Moments_phi       &field_phi,
+                  Field_Moments_phi_out   &field_phi_out,
                   Field_SigmaS            &field_sigs,
                   Field_Zone2MixElem      &field_zone_to_mixelem,
                   Field_Zone2Int          &field_zone_to_num_mixelem,
@@ -152,8 +152,8 @@ void Kripke::Kernel::scattering(Kripke::Core::DataStore &data_store)
   auto &set_zonej  = data_store.getVariable<Kripke::Core::Set>("Set/ZoneJ");
   auto &set_zonek  = data_store.getVariable<Kripke::Core::Set>("Set/ZoneK");
 
-  auto &field_phi     = data_store.getVariable<Kripke::Field_Moments>("phi");
-  auto &field_phi_out = data_store.getVariable<Kripke::Field_Moments>("phi_out");
+  auto &field_phi     = data_store.getVariable<Kripke::Field_Moments_phi>("phi");
+  auto &field_phi_out = data_store.getVariable<Kripke::Field_Moments_phi_out>("phi_out");
   auto &field_sigs    = data_store.getVariable<Field_SigmaS>("data/sigs");
 
   auto &field_zone_to_mixelem     = data_store.getVariable<Field_Zone2MixElem>("zone_to_mixelem");

@@ -78,7 +78,6 @@ void Kripke::generateProblem(Kripke::Core::DataStore &data_store,
   Generate::generateData(data_store, input_vars);
 
 
-
   // Display all of the fields that were created, and what their sizes are
   if(default_comm.rank() == 0){
 

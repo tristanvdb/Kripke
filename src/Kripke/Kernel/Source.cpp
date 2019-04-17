@@ -54,7 +54,7 @@ struct SourceSdom {
                   Kripke::SdomId          sdom_id,
                   Set const               &set_group,
                   Set const               &set_mixelem,
-                  Field_Moments           &field_phi_out,
+                  Field_Moments_phi_out   &field_phi_out,
                   Field_MixElem2Zone      &field_mixed_to_zone,
                   Field_MixElem2Material  &field_mixed_to_material,
                   Field_MixElem2Double    &field_mixed_to_fraction,
@@ -114,7 +114,7 @@ void Kripke::Kernel::source(DataStore &data_store)
   auto &set_group   = data_store.getVariable<Set>("Set/Group");
   auto &set_mixelem = data_store.getVariable<Set>("Set/MixElem");
 
-  auto &field_phi_out = data_store.getVariable<Kripke::Field_Moments>("phi_out");
+  auto &field_phi_out = data_store.getVariable<Kripke::Field_Moments_phi_out>("phi_out");
 
   auto &field_mixed_to_zone     = data_store.getVariable<Field_MixElem2Zone>("mixelem_to_zone");
   auto &field_mixed_to_material = data_store.getVariable<Field_MixElem2Material>("mixelem_to_material");

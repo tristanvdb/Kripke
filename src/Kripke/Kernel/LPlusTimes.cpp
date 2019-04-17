@@ -44,15 +44,15 @@ struct LPlusTimesSdom {
   template<typename AL>
   void operator()(AL al, 
                   Kripke::SdomId sdom_id,
-                  Set const       &set_dir,
-                  Set const       &set_group,
-                  Set const       &set_zonei,
-                  Set const       &set_zonej,
-                  Set const       &set_zonek,
-                  Set const       &set_moment,
-                  Field_Moments   &field_phi_out,
-                  Field_Flux      &field_rhs,
-                  Field_EllPlus   &field_ell_plus) const
+                  Set const             &set_dir,
+                  Set const             &set_group,
+                  Set const             &set_zonei,
+                  Set const             &set_zonej,
+                  Set const             &set_zonek,
+                  Set const             &set_moment,
+                  Field_Moments_phi_out &field_phi_out,
+                  Field_Flux_rhs        &field_rhs,
+                  Field_EllPlus         &field_ell_plus) const
   {
     
     using ExecPolicy = typename Kripke::Arch::Policy_LPlusTimes<AL>::ExecPolicy;
@@ -105,8 +105,8 @@ void Kripke::Kernel::LPlusTimes(Kripke::Core::DataStore &data_store)
   Set const &set_zonek  = data_store.getVariable<Set>("Set/ZoneK");
   Set const &set_moment = data_store.getVariable<Set>("Set/Moment");
 
-  auto &field_phi_out =   data_store.getVariable<Field_Moments>("phi_out");
-  auto &field_rhs =       data_store.getVariable<Field_Flux>("rhs");
+  auto &field_phi_out =   data_store.getVariable<Field_Moments_phi_out>("phi_out");
+  auto &field_rhs =       data_store.getVariable<Field_Flux_rhs>("rhs");
   auto &field_ell_plus =  data_store.getVariable<Field_EllPlus>("ell_plus");
 
   ArchLayoutV al_v = data_store.getVariable<ArchLayout>("al").al_v;

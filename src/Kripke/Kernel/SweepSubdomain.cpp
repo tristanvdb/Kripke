@@ -72,8 +72,8 @@ struct SweepSdom {
     auto dz = sdom_al.getView(data_store.getVariable<Field_ZoneK2Double>("dz"));
 
     auto sigt = sdom_al.getView(data_store.getVariable<Kripke::Field_SigmaTZonal>("sigt_zonal"));
-    auto psi = sdom_al.getView(data_store.getVariable<Kripke::Field_Flux>("psi"));
-    auto rhs = sdom_al.getView(data_store.getVariable<Kripke::Field_Flux>("rhs"));
+    auto psi = sdom_al.getView(data_store.getVariable<Kripke::Field_Flux_psi>("psi"));
+    auto rhs = sdom_al.getView(data_store.getVariable<Kripke::Field_Flux_rhs>("rhs"));
 
     auto psi_lf = sdom_al.getView(data_store.getVariable<Field_IPlane>("i_plane"));
     auto psi_fr = sdom_al.getView(data_store.getVariable<Field_JPlane>("j_plane"));

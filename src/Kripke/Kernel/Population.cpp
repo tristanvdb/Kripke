@@ -52,7 +52,7 @@ struct PopulationSdom {
                   Set const               &set_zonei,
                   Set const               &set_zonej,
                   Set const               &set_zonek,
-                  Field_Flux              &field_psi,
+                  Field_Flux_psi          &field_psi,
                   Field_Direction2Double  &field_w,
                   Field_Zone2Double       &field_volume,
                   double                  *part_ptr) const
@@ -111,7 +111,7 @@ double Kripke::Kernel::population(Kripke::Core::DataStore &data_store)
   Set const &set_zonej  = data_store.getVariable<Set>("Set/ZoneJ");
   Set const &set_zonek  = data_store.getVariable<Set>("Set/ZoneK");
 
-  auto &field_psi =       data_store.getVariable<Field_Flux>("psi");
+  auto &field_psi =       data_store.getVariable<Field_Flux_psi>("psi");
   auto &field_w =         data_store.getVariable<Field_Direction2Double>("quadrature/w");
   auto &field_volume =    data_store.getVariable<Field_Zone2Double>("volume");
 
