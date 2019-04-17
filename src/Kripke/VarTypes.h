@@ -53,81 +53,50 @@ namespace Kripke {
   RAJA_INDEX_VALUE(ZoneI, "ZoneI");
   RAJA_INDEX_VALUE(ZoneJ, "ZoneJ");
   RAJA_INDEX_VALUE(ZoneK, "ZoneK");
+  using ZoneX = std::tuple<ZoneI,ZoneJ,ZoneK>;
 
 #if defined(KRIPKE_USE_ZFP)
 
-
+#if 0
+  // There is no case where replacing a whole field by a ZFP array make sense...
   struct double_zfp_rate_16 : public Kripke::Core::field_storage_config {
     using type = double;
     constexpr static double zfp_rate = 16.;
   };
+#endif
 
-#define TEST_ZFP_ARRAY_OF_ARRAY 1
-#if TEST_ZFP_ARRAY_OF_ARRAY
   // Descriptors for array of zfp array
   //    - `exclude` refers to the number of dimension being excluded from the ZFP array
   //         -> we exclude dimension *after* the layout is applied
   //    - `zfp_fast_dims` refers to whether we put the faster or upper dimensions form the ZFP array
   //         -> `zfp_fast_dims == true` => the faster dimension are used
-  struct double_zfp_rate_16_exclude_1_fast : public Kripke::Core::field_storage_config {
-    using type = double;
-    constexpr static double zfp_rate = 16.;
-    constexpr static size_t exclude = 1;
-    constexpr static size_t zfp_fast_dims = true;
-  };
-#endif
-
-#define TEST_MORE_ZFP_ARRAY_OF_ARRAY 0
-#if TEST_MORE_ZFP_ARRAY_OF_ARRAY
   struct double_zfp_rate_16_exclude_2_fast : public Kripke::Core::field_storage_config {
     using type = double;
     constexpr static double zfp_rate = 16.;
     constexpr static size_t exclude = 2;
     constexpr static bool zfp_fast_dims = true;
   };
-  struct double_zfp_rate_16_exclude_2_slow : public Kripke::Core::field_storage_config {
-    using type = double;
-    constexpr static double zfp_rate = 16.;
-    constexpr static size_t exclude = 2;
-    constexpr static bool zfp_fast_dims = false;
-  };
-#endif
 
-  using Field_Flux = Kripke::Core::Field<double_zfp_rate_16, Direction, Group, Zone>;
+  // Exclude: Direction & Group
+  using Field_Flux = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>;
 //using Field_Flux_psi = Field_Flux; // updates in: SweepSubdomain
 //using Field_Flux_rhs = Field_Flux; // updates in: LPlusTime
 
-  using Field_Moments = Kripke::Core::Field<double_zfp_rate_16, Moment, Group, Zone>;
+  // Exclude: Moment & Group
+  using Field_Moments = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Moment, Group, ZoneI, ZoneJ, ZoneK>;
 //using Field_Moments_phi = Field_Moments; // updates in: LTimes
 //using Field_Moments_phi_out = Field_Moments; // updates in: Scattering, Source
 
-#if TEST_ZFP_ARRAY_OF_ARRAY
-  using type_for_Field_IPlane = double_zfp_rate_16_exclude_1_fast;
-#else
-  using type_for_Field_IPlane = double;
-#endif
-
-  using Field_IPlane = Kripke::Core::Field<type_for_Field_IPlane, Direction, Group, ZoneJ, ZoneK>; // updates in: SweepSubdomain
+  // Exclude: Direction & Group
+  using Field_IPlane = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneJ, ZoneK>; // updates in: SweepSubdomain
 //using Field_IPlane_old = Field_IPlane; // for comms, problably easier if they are the same
 
-#if TEST_MORE_ZFP_ARRAY_OF_ARRAY
-  using type_for_Field_JPlane = double_zfp_rate_16_exclude_2_fast;
-#elif TEST_ZFP_ARRAY_OF_ARRAY
-  using type_for_Field_JPlane = double_zfp_rate_16_exclude_1_fast;
-#else
-  using type_for_Field_JPlane = double;
-#endif
-  using Field_JPlane = Kripke::Core::Field<type_for_Field_JPlane, Direction, Group, ZoneI, ZoneK>; // updates in: SweepSubdomain
+  // Exclude: Direction & Group
+  using Field_JPlane = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneK>; // updates in: SweepSubdomain
 //using Field_JPlane_old = Field_JPlane; // for comms, problably easier if they are the same
 
-#if TEST_MORE_ZFP_ARRAY_OF_ARRAY
-  using type_for_Field_KPlane = double_zfp_rate_16_exclude_2_slow;
-#elif TEST_ZFP_ARRAY_OF_ARRAY
-  using type_for_Field_KPlane = double_zfp_rate_16_exclude_1_fast;
-#else
-  using type_for_Field_KPlane = double;
-#endif
-  using Field_KPlane = Kripke::Core::Field<type_for_Field_KPlane, Direction, Group, ZoneI, ZoneJ>; // updates in: SweepSubdomain
+  // Exclude: Direction & Group
+  using Field_KPlane = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneJ>; // updates in: SweepSubdomain
 //using Field_KPlane_old = Field_KPlane; // for comms, problably easier if they are the same
 
   using Field_Ell     = Kripke::Core::Field<double, Moment, Direction>;
@@ -147,18 +116,18 @@ namespace Kripke {
   using Field_ZoneI2Double  = Kripke::Core::Field<double, ZoneI>;
   using Field_ZoneJ2Double  = Kripke::Core::Field<double, ZoneJ>;
   using Field_ZoneK2Double  = Kripke::Core::Field<double, ZoneK>;
-  using Field_Zone2Double   = Kripke::Core::Field<double, Zone>;
-  using Field_Zone2Int      = Kripke::Core::Field<int, Zone>;
-  using Field_Zone2MixElem  = Kripke::Core::Field<MixElem, Zone>;
+  using Field_Zone2Double   = Kripke::Core::Field<double, ZoneI, ZoneJ, ZoneK>;
+  using Field_Zone2Int      = Kripke::Core::Field<int, ZoneI, ZoneJ, ZoneK>;
+  using Field_Zone2MixElem  = Kripke::Core::Field<MixElem, ZoneI, ZoneJ, ZoneK>;
 
   using Field_MixElem2Double   = Kripke::Core::Field<double, MixElem>;
   using Field_MixElem2Material = Kripke::Core::Field<Material, MixElem>;
-  using Field_MixElem2Zone     = Kripke::Core::Field<Zone, MixElem>;
+  using Field_MixElem2Zone     = Kripke::Core::Field<ZoneX, MixElem>;
 
-  using Field_SigmaTZonal = Kripke::Core::Field<double, Group, Zone>;
+  using Field_SigmaTZonal = Kripke::Core::Field<double, Group, ZoneI, ZoneJ, ZoneK>;
 #else
-  using Field_Flux = Kripke::Core::Field<double, Direction, Group, Zone>;
-  using Field_Moments = Kripke::Core::Field<double, Moment, Group, Zone>;
+  using Field_Flux = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneJ, ZoneK>;
+  using Field_Moments = Kripke::Core::Field<double, Moment, Group, ZoneI, ZoneJ, ZoneK>;
 
   using Field_IPlane = Kripke::Core::Field<double, Direction, Group, ZoneJ, ZoneK>;
   using Field_JPlane = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneK>;
@@ -181,17 +150,15 @@ namespace Kripke {
   using Field_ZoneI2Double  = Kripke::Core::Field<double, ZoneI>;
   using Field_ZoneJ2Double  = Kripke::Core::Field<double, ZoneJ>;
   using Field_ZoneK2Double  = Kripke::Core::Field<double, ZoneK>;
-  using Field_Zone2Double   = Kripke::Core::Field<double, Zone>;
-  using Field_Zone2Int      = Kripke::Core::Field<int, Zone>;
-  using Field_Zone2MixElem  = Kripke::Core::Field<MixElem, Zone>;
+  using Field_Zone2Double   = Kripke::Core::Field<double, ZoneI, ZoneJ, ZoneK>;
+  using Field_Zone2Int      = Kripke::Core::Field<int, ZoneI, ZoneJ, ZoneK>;
+  using Field_Zone2MixElem  = Kripke::Core::Field<MixElem, ZoneI, ZoneJ, ZoneK>;
 
   using Field_MixElem2Double   = Kripke::Core::Field<double, MixElem>;
   using Field_MixElem2Material = Kripke::Core::Field<Material, MixElem>;
-  using Field_MixElem2Zone     = Kripke::Core::Field<Zone, MixElem>;
+  using Field_MixElem2Zone     = Kripke::Core::Field<ZoneX, MixElem>;
 
-  using Field_SigmaTZonal = Kripke::Core::Field<double, Group, Zone>;
-#endif
-
+  using Field_SigmaTZonal = Kripke::Core::Field<double, Group, ZoneI, ZoneJ, ZoneK>;
 
   template<typename T>
   struct DefaultOrder{};

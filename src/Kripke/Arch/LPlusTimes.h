@@ -50,7 +50,7 @@ struct Policy_LPlusTimes<ArchLayoutT<ArchT_Sequential, LayoutT_DGZ>> {
       For<0, loop_exec, // Direction
         For<1, loop_exec, // Moment
           For<2, loop_exec, // Group
-            For<3, loop_exec, // Zone
+            Collapse<loop_exec, ArgList<5,4,3>, // zones i,j,k
               Lambda<0>
             >
           >

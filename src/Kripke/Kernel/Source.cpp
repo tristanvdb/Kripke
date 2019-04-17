@@ -88,10 +88,13 @@ struct SourceSdom {
             Material material = mixelem_to_material(mix);
 
             if(material == 2){
-              Zone z = mixelem_to_zone(mix);
+              ZoneX z = mixelem_to_zone(mix);
+              ZoneI i = std::get<0>(z);
+              ZoneJ j = std::get<1>(z);
+              ZoneK k = std::get<2>(z);
               double fraction = mixelem_to_fraction(mix);
 
-              phi_out(nm, g, z) += source_strength * fraction;
+              phi_out(nm, g, i, j, k) += source_strength * fraction;
             }
 
         }

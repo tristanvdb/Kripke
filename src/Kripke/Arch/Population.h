@@ -51,7 +51,7 @@ struct Policy_Population<ArchLayoutT<ArchT_Sequential, LayoutT_DGZ>>{
     KernelPolicy<
       For<0, loop_exec, // direction
         For<1, loop_exec, // group
-          For<2, loop_exec, // zone
+          Collapse<loop_exec, ArgList<4,3,2>, // zones i,j,k
             Lambda<0>
           >
         >

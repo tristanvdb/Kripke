@@ -51,7 +51,9 @@ struct LTimesSdom {
                   Kripke::SdomId sdom_id,
                   Set const       &set_dir,
                   Set const       &set_group,
-                  Set const       &set_zone,
+                  Set const       &set_zonei,
+                  Set const       &set_zonej,
+                  Set const       &set_zonek,
                   Set const       &set_moment,
                   Field_Flux      &field_psi,
                   Field_Moments   &field_phi,
@@ -66,7 +68,9 @@ struct LTimesSdom {
     int num_directions = set_dir.size(sdom_id);
     int num_groups =     set_group.size(sdom_id);
     int num_moments =    set_moment.size(sdom_id);
-    int num_zones =      set_zone.size(sdom_id);
+    int num_zones_i =    set_zonei.size(sdom_id);
+    int num_zones_j =    set_zonej.size(sdom_id);
+    int num_zones_k =    set_zonek.size(sdom_id);
 
     // Get pointers
     auto psi = sdom_al.getView(field_psi);
@@ -79,10 +83,13 @@ struct LTimesSdom {
             RAJA::TypedRangeSegment<Moment>(0, num_moments),
             RAJA::TypedRangeSegment<Direction>(0, num_directions),
             RAJA::TypedRangeSegment<Group>(0, num_groups),
-            RAJA::TypedRangeSegment<Zone>(0, num_zones) ),
-        KRIPKE_LAMBDA (Moment nm, Direction d, Group g, Zone z) {
+            RAJA::TypedRangeSegment<ZoneK>(0, num_zones_k),
+            RAJA::TypedRangeSegment<ZoneJ>(0, num_zones_j),
+            RAJA::TypedRangeSegment<ZoneI>(0, num_zones_i)
+        ),
+        KRIPKE_LAMBDA (Moment nm, Direction d, Group g, ZoneK k, ZoneJ j, ZoneI i) {
 
-           phi(nm,g,z) += ell(nm, d) * psi(d, g, z);
+           phi(nm, g, i, j, k) += ell(nm, d) * psi(d, g, i, j, k);
 
         }
     );
@@ -107,7 +114,9 @@ void Kripke::Kernel::LTimes(Kripke::Core::DataStore &data_store)
 
   Set const &set_dir    = data_store.getVariable<Set>("Set/Direction");
   Set const &set_group  = data_store.getVariable<Set>("Set/Group");
-  Set const &set_zone   = data_store.getVariable<Set>("Set/Zone");
+  Set const &set_zonei  = data_store.getVariable<Set>("Set/ZoneI");
+  Set const &set_zonej  = data_store.getVariable<Set>("Set/ZoneJ");
+  Set const &set_zonek  = data_store.getVariable<Set>("Set/ZoneK");
   Set const &set_moment = data_store.getVariable<Set>("Set/Moment");
 
   auto &field_psi =       data_store.getVariable<Field_Flux>("psi");
@@ -119,7 +128,7 @@ void Kripke::Kernel::LTimes(Kripke::Core::DataStore &data_store)
 
 
     Kripke::dispatch(al_v, LTimesSdom{}, sdom_id,
-                     set_dir, set_group, set_zone, set_moment,
+                     set_dir, set_group, set_zonei, set_zonej, set_zonek, set_moment,
                      field_psi, field_phi, field_ell);
 
 
