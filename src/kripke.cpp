@@ -413,10 +413,10 @@ int main(int argc, char **argv) {
     else if(opt == "--zfp_rhs_cache") {
       vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_rhs].cached_blocks = std::atoi(cmd.pop().c_str());
     }
-    else if(opt == "--zfp_field_phi_rate") {
+    else if(opt == "--zfp_phi_rate") {
       vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi].compression_rate = std::atof(cmd.pop().c_str());
     }
-    else if(opt == "--zfp_field_phi_cache") {
+    else if(opt == "--zfp_phi_cache") {
       vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi].cached_blocks = std::atoi(cmd.pop().c_str());
     }
     else if(opt == "--zfp_phi_out_rate") {

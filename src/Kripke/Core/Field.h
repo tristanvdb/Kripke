@@ -316,9 +316,7 @@ namespace Core {
   struct StorageTypeHelper;
 
   template <typename ErrorT, size_t N>
-  struct StorageTypeHelper<ErrorT, N, false, true> {
-    static_assert("Does not make sense!");
-  };
+  struct StorageTypeHelper<ErrorT, N, false, true> {};
 
   template <typename StorageT, size_t N>
   struct StorageTypeHelper<StorageT, N, false, false> : public BasicStorageTypeHelper<StorageT, StorageT> {};
