@@ -40,9 +40,27 @@
 #include <Kripke/Timing.h>
 #include <Kripke/VarTypes.h>
 
+#if defined(KRIPKE_USE_ZFP)
+namespace zfp {
+  size_t compression_rate;
+  size_t cached_blocks;
+
+  void set_config(InputVariables const & input_vars, InputVariables::zfp_enabled_fields_e field_selector) {
+    compression_rate = input_vars.zfp_enabled_fields_config[field_selector].compression_rate;
+    if (compression_rate == 0.) {
+      compression_rate = input_vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_default].compression_rate;
+    }
+
+    cached_blocks = input_vars.zfp_enabled_fields_config[field_selector].cached_blocks;
+    if (cached_blocks == 0) {
+      cached_blocks = input_vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_default].cached_blocks;
+    }
+  }
+}
+#endif
+
 using namespace Kripke;
 using namespace Kripke::Core;
-
 
 void Kripke::Generate::generateData(Kripke::Core::DataStore &data_store,
     InputVariables const &input_vars)
@@ -65,7 +83,13 @@ void Kripke::Generate::generateData(Kripke::Core::DataStore &data_store,
   ArchLayoutV al_v = data_store.getVariable<ArchLayout>("al").al_v;
   
   // Create Solution and RHS fields
+#if defined(KRIPKE_USE_ZFP)
+  zfp::set_config(input_vars, InputVariables::e_zfp_field_psi);
+#endif
   createField<Field_Flux_psi>(data_store, "psi", al_v, *flux_set);
+#if defined(KRIPKE_USE_ZFP)
+  zfp::set_config(input_vars, InputVariables::e_zfp_field_rhs);
+#endif
   createField<Field_Flux_rhs>(data_store, "rhs", al_v, *flux_set);
 
 
@@ -78,7 +102,13 @@ void Kripke::Generate::generateData(Kripke::Core::DataStore &data_store,
 
 
   // Create flux moment and source moment fields
+#if defined(KRIPKE_USE_ZFP)
+  zfp::set_config(input_vars, InputVariables::e_zfp_field_phi);
+#endif
   createField<Field_Moments_phi>(data_store, "phi", al_v, *fluxmoment_set);
+#if defined(KRIPKE_USE_ZFP)
+  zfp::set_config(input_vars, InputVariables::e_zfp_field_phi_out);
+#endif
   createField<Field_Moments_phi_out>(data_store, "phi_out", al_v, *fluxmoment_set);
 
 

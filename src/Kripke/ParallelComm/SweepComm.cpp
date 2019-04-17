@@ -99,8 +99,6 @@ void SweepComm::markComplete(SdomId sdom_id){
   auto &j_plane = m_data_store->getVariable<Field_JPlane>("j_plane");
   auto &k_plane = m_data_store->getVariable<Field_KPlane>("k_plane");
 
-  // Following code is still an issue with ZFP (these *might* be ZFP array).
-#if !defined(KRIPKE_USE_ZFP)
   // Send new downwind info for sweep
   double *buf[3] = {
     i_plane.getData(sdom_id),
@@ -108,8 +106,5 @@ void SweepComm::markComplete(SdomId sdom_id){
     k_plane.getData(sdom_id)
   };
   postSends(*m_data_store, sdom_id, buf);
-#else
-  assert("NIY!");
-#endif
 }
 

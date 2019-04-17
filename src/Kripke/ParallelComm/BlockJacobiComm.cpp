@@ -53,9 +53,9 @@ ParallelComm(data_store), posted_sends(false)
   Set const &set_iplane = data_store.getVariable<Set>("Set/IPlane");
   Set const &set_jplane = data_store.getVariable<Set>("Set/JPlane");
   Set const &set_kplane = data_store.getVariable<Set>("Set/KPlane");
-  createField<Field_IPlane_old>(data_store, "old_i_plane", al_v, set_iplane);
-  createField<Field_JPlane_old>(data_store, "old_j_plane", al_v, set_jplane);
-  createField<Field_KPlane_old>(data_store, "old_k_plane", al_v, set_kplane);
+  createField<Field_IPlane>(data_store, "old_i_plane", al_v, set_iplane);
+  createField<Field_JPlane>(data_store, "old_j_plane", al_v, set_jplane);
+  createField<Field_KPlane>(data_store, "old_k_plane", al_v, set_kplane);
 }
 
 BlockJacobiComm::~BlockJacobiComm(){
@@ -72,15 +72,15 @@ void BlockJacobiComm::addSubdomain(Kripke::Core::DataStore &data_store, SdomId s
 
   // Copy old flux data to send buffers
   auto &i_plane = m_data_store->getVariable<Field_IPlane>("i_plane");
-  auto &old_i_plane = m_data_store->getVariable<Field_IPlane_old>("old_i_plane");
+  auto &old_i_plane = m_data_store->getVariable<Field_IPlane>("old_i_plane");
   Kernel::kCopy(old_i_plane, i_plane);
 
   auto &j_plane = m_data_store->getVariable<Field_JPlane>("j_plane");
-  auto &old_j_plane = m_data_store->getVariable<Field_JPlane_old>("old_j_plane");
+  auto &old_j_plane = m_data_store->getVariable<Field_JPlane>("old_j_plane");
   Kernel::kCopy(old_j_plane, j_plane);
 
   auto &k_plane = m_data_store->getVariable<Field_KPlane>("k_plane");
-  auto &old_k_plane = m_data_store->getVariable<Field_KPlane_old>("old_k_plane");
+  auto &old_k_plane = m_data_store->getVariable<Field_KPlane>("old_k_plane");
   Kernel::kCopy(old_k_plane, k_plane);
 
   // post recieves
@@ -101,8 +101,6 @@ bool BlockJacobiComm::workRemaining(void){
     for(size_t i = 0;i < queue_sdom_ids.size();++ i){
       SdomId sdom_id(queue_sdom_ids[i]);
 
-      // Following code is still an issue with ZFP (these *might* be ZFP array).
-#if !defined(KRIPKE_USE_ZFP)
       // Send new downwind info for sweep
       double *buf[3] = {
           old_i_plane.getData(sdom_id),
@@ -111,9 +109,6 @@ bool BlockJacobiComm::workRemaining(void){
       };
 
       postSends(*m_data_store, sdom_id, buf);
-#else
-      assert("NIY!");
-#endif
     }
     posted_sends = true;
   }

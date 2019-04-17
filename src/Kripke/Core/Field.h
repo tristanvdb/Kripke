@@ -52,12 +52,20 @@
 #include "zfparray3.h"
 #endif
 
+
+#if defined(KRIPKE_USE_ZFP)
+namespace zfp {
+  constexpr size_t block_size{512}; // should be able to get this out of zfp somehow...
+
+  extern size_t compression_rate;
+  extern size_t cached_blocks;
+}
+#endif
+
 namespace Kripke {
 namespace Core {
 
 #if defined(KRIPKE_USE_ZFP)
-
-#define DEBUG_ZFP_WITH_PRINTF 0
 
   template <typename CONFIG, typename ELEMENT>
   struct BasicStorageTypeHelper {
@@ -95,10 +103,10 @@ namespace Core {
   struct has_type<T, decltype(sizeof(typename T::type), void())> : std::true_type { };
 
   template<typename T, typename = void>
-  struct has_zfp_rate : std::false_type { };
+  struct has_zfp_selector : std::false_type { };
 
   template<typename T>
-  struct has_zfp_rate<T, decltype(std::declval<T>().zfp_rate, void())> : std::true_type { };
+  struct has_zfp_selector<T, decltype(std::declval<T>().uses_zfp, void())> : std::true_type { };
 
   template<typename T, typename = void>
   struct has_exclude : std::false_type { };
@@ -111,20 +119,16 @@ namespace Core {
 
   template <typename ELEMENT>
   struct zfp_array_selector<ELEMENT, 1>{
-    using type = zfp::array1<ELEMENT>;
+    using type = ::zfp::array1<ELEMENT>;
 
-    static inline type * alloc(size_t size, double rate) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("  Alloc ZFP 1D array of size %zu with rate %f\n", size, rate);
-#endif
-      return new type(size, rate);
+    static inline type * alloc(size_t size) {
+
+      return new type(size, ::zfp::compression_rate, NULL, ::zfp::cached_blocks * ::zfp::block_size);
     }
 
     template <typename LayoutT>
     static inline size_t layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("  Layout ZFP 1D array to [%lu]\n", layout.sizes[0]);
-#endif
+
       store->resize(layout.sizes[0]);
       baseptr = typename type::pointer(store, 0);
 
@@ -133,20 +137,16 @@ namespace Core {
   };
   template <typename ELEMENT>
   struct zfp_array_selector<ELEMENT, 2>{
-    using type = zfp::array2<ELEMENT>;
+    using type = ::zfp::array2<ELEMENT>;
 
-    static inline type * alloc(size_t size, double rate) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("  Alloc ZFP 2D array of size %zu with rate %f\n", size, rate);
-#endif
-      return new type(size, 1, rate);
+    static inline type * alloc(size_t size) {
+
+      return new type(size, 1, ::zfp::compression_rate, NULL, ::zfp::cached_blocks * ::zfp::block_size);
     }
 
     template <typename LayoutT>
     static inline size_t layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("  Layout ZFP 2D array to [%lux%lu]\n", layout.sizes[0], layout.sizes[1]);
-#endif
+
       store->resize(layout.sizes[0], layout.sizes[1]);
       baseptr = typename type::pointer(store, 0, 0);
 
@@ -155,20 +155,16 @@ namespace Core {
   };
   template <typename ELEMENT>
   struct zfp_array_selector<ELEMENT, 3>{
-    using type = zfp::array3<ELEMENT>;
+    using type = ::zfp::array3<ELEMENT>;
 
-    static inline type * alloc(size_t size, double rate) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("  Alloc ZFP 3D array of size %zu with rate %f\n", size, rate);
-#endif
-      return new type(size, 1, 1, rate);
+    static inline type * alloc(size_t size) {
+
+      return new type(size, 1, 1, ::zfp::compression_rate, NULL, ::zfp::cached_blocks * ::zfp::block_size);
     }
 
     template <typename LayoutT>
     static inline size_t layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("  Layout ZFP 3D array to [%lux%lux%lu]\n", layout.sizes[0], layout.sizes[1], layout.sizes[2]);
-#endif
+
       store->resize(layout.sizes[0], layout.sizes[1], layout.sizes[2]);
       baseptr = typename type::pointer(store, 0, 0, 0);
 
@@ -200,10 +196,7 @@ namespace Core {
     };
 
     static inline storage_pointer alloc(size_t size) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("Alloc ZFP array of size %zu with rate %f\n", size, config_type::zfp_rate);
-#endif
-      return array_selector::alloc(size, config_type::zfp_rate);
+      return array_selector::alloc(size);
     }
 
     static inline void free(storage_pointer & store, element_pointer & baseptr) {
@@ -212,15 +205,13 @@ namespace Core {
 
     template <typename LayoutT>
     static inline size_t layout(storage_pointer & store, element_pointer & baseptr, LayoutT const & layout) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("Layout ZFP array\n");
-#endif
+
       static_assert(LayoutT::n_dims == N, "Sizes of the layout and storage do not match.");
       return array_selector::layout(store, baseptr, layout);
     }
   };
 
-  template <size_t N, size_t exclude, bool zfp_fast_dims>
+  template <size_t N, size_t exclude, bool fast_dims>
   struct array_of_zfp_array_view_pointer_type;
 
   template <size_t N, size_t exclude>
@@ -256,14 +247,12 @@ namespace Core {
     using element_pointer = typename storage_type::pointer *;
     using element_reference = typename storage_type::reference;
 
-    struct view_pointer_type : public array_of_zfp_array_view_pointer_type<N, config_type::exclude, config_type::zfp_fast_dims> {
+    struct view_pointer_type : public array_of_zfp_array_view_pointer_type<N, config_type::exclude, config_type::fast_dims> {
       using array_type = storage_type;
     };
 
     static inline storage_pointer alloc(size_t size) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("Alloc array of ZFP array of size %zu with rate %f\n", size, config_type::zfp_rate);
-#endif
+
       return nullptr;
     }
 
@@ -274,18 +263,12 @@ namespace Core {
     }
 
     static inline element_pointer get_pointer(storage_pointer store) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("  ZFPStorageTypeHelper<array of ZFP array>::get_pointer\n");
-#endif
+
       return store;
     }
 
     template <typename LayoutT>
     static inline size_t layout(storage_pointer & store, element_pointer & baseptr, LayoutT const & layout) {
-#if DEBUG_ZFP_WITH_PRINTF
-      printf("Layout array of ZFP array:\n");
-      printf(" -- LayoutT::n_dims = %d\n", LayoutT::n_dims);
-#endif
       static_assert(LayoutT::n_dims == N, "Sizes of the layout and storage do not match.");
 
       tmp_split_layout_t slow_layout, fast_layout;
@@ -293,9 +276,7 @@ namespace Core {
       size_t slow_size = 1;
       size_t fast_size = 1;
       for (size_t i = 0; i < N; i++) {
-#if DEBUG_ZFP_WITH_PRINTF
-        printf(" -- layout.sizes[%zu] = %zu\n", i, layout.sizes[i]);
-#endif
+
         if (i < view_pointer_type::num_slow_dims) {
           slow_size *= layout.sizes[i];
           slow_layout.sizes.push_back(layout.sizes[i]);
@@ -304,23 +285,20 @@ namespace Core {
           fast_layout.sizes.push_back(layout.sizes[i]);
         }
       }
-#if DEBUG_ZFP_WITH_PRINTF
-      printf(" - slow_size = %d\n", slow_size);
-      printf(" - fast_size = %d\n", fast_size);
-#endif
+
       size_t size = 0;
-      if (config_type::zfp_fast_dims) {
+      if (config_type::fast_dims) {
         store = new storage_type*[slow_size];
         baseptr = new typename storage_type::pointer[slow_size];
         for (size_t i = 0; i < slow_size; i++) {
-          store[i] = array_selector::alloc(fast_size, config_type::zfp_rate);
+          store[i] = array_selector::alloc(fast_size);
           size += array_selector::layout(store[i], baseptr[i], fast_layout);
         }
       } else {
         store = new storage_type*[fast_size];
         baseptr = new typename storage_type::pointer[fast_size];
         for (size_t i = 0; i < fast_size; i++) {
-          store[i] = array_selector::alloc(slow_size, config_type::zfp_rate);
+          store[i] = array_selector::alloc(slow_size);
           size += array_selector::layout(store[i], baseptr[i], slow_layout);
         }
       }
@@ -333,7 +311,7 @@ namespace Core {
     typename ConfigT,
     size_t N,
     bool = std::is_base_of<field_storage_config, ConfigT>::value,
-    bool = has_zfp_rate<ConfigT>::value
+    bool = has_zfp_selector<ConfigT>::value
   >
   struct StorageTypeHelper;
 
@@ -366,8 +344,6 @@ namespace Core {
   struct ElementTypeFromConfigT<ConfigT, true> {
     using type = typename ConfigT::type;
   };
-
-  
 #endif
 
   template<typename ELEMENT>
@@ -549,11 +525,6 @@ namespace Core {
 
       RAJA_INLINE
       View1dType getView1d(Kripke::SdomId sdom_id) const {
-
-#if DEBUG_ZFP_WITH_PRINTF
-        printf("In FieldStorage::getView1d()\n");
-#endif
-
         size_t chunk_id = Kripke::Core::DomainVar::m_subdomain_to_chunk[*sdom_id];
 
 #if defined(KRIPKE_USE_ZFP)
@@ -568,10 +539,6 @@ namespace Core {
 
       RAJA_INLINE
       StoragePtr getData(Kripke::SdomId sdom_id) const {
-
-#if DEBUG_ZFP_WITH_PRINTF
-        printf("In FieldStorage::getData()\n");
-#endif
 
         KRIPKE_ASSERT(*sdom_id < (int)Kripke::Core::DomainVar::m_subdomain_to_chunk.size(),
             "sdom_id(%d) >= num_subdomains(%d)",
@@ -680,10 +647,6 @@ namespace Core {
       RAJA_INLINE
       DefaultViewType getView(Kripke::SdomId sdom_id) const {
 
-#if DEBUG_ZFP_WITH_PRINTF
-        printf("In Field::getView()\n");
-#endif
-
         size_t chunk_id = Kripke::Core::DomainVar::m_subdomain_to_chunk[*sdom_id];
 
 #if defined(KRIPKE_USE_ZFP)
@@ -702,11 +665,6 @@ namespace Core {
       auto getViewOrder(Kripke::SdomId sdom_id) const ->
         ViewType<Order, ElementType, ViewPtr, IDX_TYPES...>
       {
-
-#if DEBUG_ZFP_WITH_PRINTF
-        printf("In Field::getViewOrder()\n");
-#endif
-
         size_t chunk_id = Kripke::Core::DomainVar::m_subdomain_to_chunk[*sdom_id];
 
 #if defined(KRIPKE_USE_ZFP)

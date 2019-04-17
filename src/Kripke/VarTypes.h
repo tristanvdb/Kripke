@@ -59,53 +59,42 @@ namespace Kripke {
 
 #if 0
   // There is no case where replacing a whole field by a ZFP array make sense...
-  struct double_zfp_rate_16 : public Kripke::Core::field_storage_config {
+  struct double_zfp : public Kripke::Core::field_storage_config {
     using type = double;
-    constexpr static double zfp_rate = 16.;
+    constexpr static bool uses_zfp;
   };
 #endif
 
   // Descriptors for array of zfp array
-  //    - `exclude` refers to the number of dimension being excluded from the ZFP array
+  //    - `exclude` refers to the number of dimension being excluded from the user defined array
   //         -> we exclude dimension *after* the layout is applied
-  //    - `zfp_fast_dims` refers to whether we put the faster or upper dimensions form the ZFP array
-  //         -> `zfp_fast_dims == true` => the faster dimension are used
-  struct double_zfp_rate_16_exclude_2_fast : public Kripke::Core::field_storage_config {
+  //    - `fast_dims` refers to whether we put the faster or upper dimensions form the user defined array
+  //         -> `fast_dims == true` => the faster dimension are used
+  struct double_zfp_exclude_2_fast : public Kripke::Core::field_storage_config {
     using type = double;
-    constexpr static double zfp_rate = 16.;
+    constexpr static bool uses_zfp = true; // true/false does not matter... FIXME use enum of available user defined array
     constexpr static size_t exclude = 2;
-    constexpr static bool zfp_fast_dims = true;
+    constexpr static bool fast_dims = true;
   };
 
   // Exclude: Direction & Group
-  using Field_Flux_psi = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: SweepSubdomain+, LTimes, Population
-  using Field_Flux_rhs = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: LPlusTime+, SweepSubdomain
+  using Field_Flux_psi = Kripke::Core::Field<double_zfp_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: SweepSubdomain+, LTimes, Population
+  using Field_Flux_rhs = Kripke::Core::Field<double_zfp_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: LPlusTime+, SweepSubdomain
 
   // Exclude: Moment & Group
-  using Field_Moments_phi     = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: LTimes+, Scattering
-  using Field_Moments_phi_out = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: Scattering+, Source, LPlusTime
-
-  // Exclude: Direction & Group
-  using Field_IPlane     = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneJ, ZoneK>; // used in: SweepSubdomain+
-  using Field_IPlane_old = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneJ, ZoneK>; // for comms (problably easier if they are the same)
-  using Field_JPlane     = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneK>; // used in: SweepSubdomain+
-  using Field_JPlane_old = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneK>; // for comms (problably easier if they are the same)
-  using Field_KPlane     = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneJ>; // used in: SweepSubdomain+
-  using Field_KPlane_old = Kripke::Core::Field<double_zfp_rate_16_exclude_2_fast, Direction, Group, ZoneI, ZoneJ>; // for comms (problably easier if they are the same)
+  using Field_Moments_phi     = Kripke::Core::Field<double_zfp_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: LTimes+, Scattering
+  using Field_Moments_phi_out = Kripke::Core::Field<double_zfp_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: Scattering+, Source, LPlusTime
 #else
   using Field_Flux_psi = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: SweepSubdomain+, LTimes
   using Field_Flux_rhs = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: LPlusTime+, SweepSubdomain
 
   using Field_Moments_phi     = Kripke::Core::Field<double, Moment, Group, ZoneI, ZoneJ, ZoneK>; // used in: LTimes+, Scattering
   using Field_Moments_phi_out = Kripke::Core::Field<double, Moment, Group, ZoneI, ZoneJ, ZoneK>; // used in: Scattering+, Source, LPlusTime
+#endif
 
   using Field_IPlane     = Kripke::Core::Field<double, Direction, Group, ZoneJ, ZoneK>;
-  using Field_IPlane_old = Kripke::Core::Field<double, Direction, Group, ZoneJ, ZoneK>;
   using Field_JPlane     = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneK>;
-  using Field_JPlane_old = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneK>;
   using Field_KPlane     = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneJ>;
-  using Field_KPlane_old = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneJ>;
-#endif
 
   using Field_Ell     = Kripke::Core::Field<double, Moment, Direction>;
   using Field_EllPlus = Kripke::Core::Field<double, Direction, Moment>;

@@ -38,20 +38,19 @@
 
 #if defined(KRIPKE_USE_ZFP)
 #  include <Kripke/Core/Field.h>
+#else
+namespace Kripke {
+namespace Core {
+ class DataStore;
+ template<typename T>
+ class FieldStorage;
+}
+}
 #endif
 
 struct Grid_Data;
 
 namespace Kripke {
-
-#if !defined(KRIPKE_USE_ZFP)
-namespace Core {
-  class DataStore;
-
-  template<typename T>
-  class FieldStorage;
-}
-#endif
 
 class ParallelComm {
   public:
@@ -82,7 +81,9 @@ class ParallelComm {
 
     Kripke::Core::DataStore *m_data_store;
 
-#if !defined(KRIPKE_USE_ZFP)
+#if defined(KRIPKE_USE_ZFP)
+    Kripke::Core::FieldStorage<double, 4> *m_plane_data[3];
+#else
     Kripke::Core::FieldStorage<double> *m_plane_data[3];
 #endif
 

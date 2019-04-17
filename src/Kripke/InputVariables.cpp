@@ -56,6 +56,7 @@ InputVariables::InputVariables() :
   niter(10),
   parallel_method(PMETHOD_SWEEP),
   num_material_subsamples(4),
+
   run_name("kripke")
 {
   num_zonesets_dim[0] = 1; 
@@ -69,6 +70,13 @@ InputVariables::InputVariables() :
   sigs[0] = 0.05;  
   sigs[1] = 0.00005;
   sigs[2] = 0.05; 
+
+#ifdef KRIPKE_USE_ZFP
+  zfp_enabled_fields_config[0] = { 64. , 1024 };
+  for (size_t i = 1; i < e_zfp_field_last; ++i) {
+    zfp_enabled_fields_config[i] = { 0. , 0 };
+  }
+#endif
 }
 
 /**
@@ -129,6 +137,10 @@ bool InputVariables::checkValues(void) const{
       printf("You must run at least one iteration (%d)\n", niter);
     return true;
   }
-  
+
+#ifdef KRIPKE_USE_ZFP
+  // TODO check ZFP fields' rate and cache size.
+#endif
+
   return false;
 }

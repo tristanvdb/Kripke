@@ -394,6 +394,38 @@ int main(int argc, char **argv) {
     else if(opt == "--layout"){
       vars.al_v.layout_v = Kripke::stringToLayout(cmd.pop());     
     }
+#ifdef KRIPKE_USE_ZFP
+    else if(opt == "--zfp_default_rate") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_default].compression_rate = std::atof(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_default_cache") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_default].cached_blocks = std::atoi(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_psi_rate") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_psi].compression_rate = std::atof(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_psi_cache") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_psi].cached_blocks = std::atoi(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_rhs_rate") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_rhs].compression_rate = std::atof(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_rhs_cache") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_rhs].cached_blocks = std::atoi(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_field_phi_rate") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi].compression_rate = std::atof(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_field_phi_cache") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi].cached_blocks = std::atoi(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_phi_out_rate") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi_out].compression_rate = std::atof(cmd.pop().c_str());
+    }
+    else if(opt == "--zfp_phi_out_cache") {
+      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi_out].cached_blocks = std::atoi(cmd.pop().c_str());
+    }
+#endif
     else{
       printf("Unknwon options %s\n", opt.c_str());
       usage();
