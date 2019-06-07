@@ -87,7 +87,7 @@ struct SourceSdom {
 
             Material material = mixelem_to_material(mix);
 
-            if(material == 2){
+            if(material == 0){
               ZoneX z = mixelem_to_zone(mix);
               ZoneI i = std::get<0>(z);
               ZoneJ j = std::get<1>(z);
