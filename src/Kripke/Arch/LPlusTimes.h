@@ -50,7 +50,7 @@ struct Policy_LPlusTimes<ArchLayoutT<ArchT_Sequential, LayoutT_DGZ>> {
       For<0, loop_exec, // Direction
         For<1, loop_exec, // Moment
           For<2, loop_exec, // Group
-            Collapse<loop_exec, ArgList<5,4,3>, // zones i,j,k
+            Collapse<loop_exec, ArgList<3,4,5>, // zones i,j,k
               Lambda<0>
             >
           >
@@ -65,7 +65,7 @@ struct Policy_LPlusTimes<ArchLayoutT<ArchT_Sequential, LayoutT_DZG>> {
     KernelPolicy<
       For<0, loop_exec, // Direction
         For<1, loop_exec, // Moment
-          Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
+          Collapse<loop_exec, ArgList<3,4,5>, // Zones k:j:i
             For<2, loop_exec, // Group
               Lambda<0>
             >
@@ -82,7 +82,7 @@ struct Policy_LPlusTimes<ArchLayoutT<ArchT_Sequential, LayoutT_GDZ>> {
       For<2, loop_exec, // Group
         For<0, loop_exec, // Direction
           For<1, loop_exec, // Moment
-            Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
+            Collapse<loop_exec, ArgList<3,4,5>, // Zones k:j:i
               Lambda<0>
             >
           >
@@ -97,7 +97,7 @@ struct Policy_LPlusTimes<ArchLayoutT<ArchT_Sequential, LayoutT_GZD>> {
   using ExecPolicy =
     KernelPolicy<
       For<2, loop_exec, // Group
-        Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
+        Collapse<loop_exec, ArgList<3,4,5>, // Zones k:j:i
           For<0, loop_exec, // Direction
             For<1, loop_exec, // Moment
               Lambda<0>
@@ -112,7 +112,7 @@ template<>
 struct Policy_LPlusTimes<ArchLayoutT<ArchT_Sequential, LayoutT_ZDG>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
+      Collapse<loop_exec, ArgList<3,4,5>, // Zones k:j:i
         For<0, loop_exec, // Direction
           For<1, loop_exec, // Moment
             For<2, loop_exec, // Group
@@ -130,7 +130,7 @@ template<>
 struct Policy_LPlusTimes<ArchLayoutT<ArchT_Sequential, LayoutT_ZGD>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
+      Collapse<loop_exec, ArgList<3,4,5>, // Zones k:j:i
         For<2, loop_exec, // Group
           For<0, loop_exec, // Direction
             For<1, loop_exec, // Moment
@@ -152,7 +152,7 @@ struct Policy_LPlusTimes<ArchLayoutT<ArchT_OpenMP, LayoutT_DGZ>> {
     KernelPolicy<
       Collapse<omp_parallel_collapse_exec, ArgList<0,2>, // Direction, Group
         For<1, loop_exec, // Moment
-          Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
+          Collapse<loop_exec, ArgList<3,4,5>, // Zones k:j:i
             Lambda<0>
           >
         >
@@ -164,7 +164,7 @@ template<>
 struct Policy_LPlusTimes<ArchLayoutT<ArchT_OpenMP, LayoutT_DZG>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<0,5,4,3>, // Direction, Zones k:j:i
+      Collapse<omp_parallel_collapse_exec, ArgList<0,3,4,5>, // Direction, Zones k:j:i
         For<1, loop_exec, // Moment
           For<2, loop_exec, // Group
             Lambda<0>
@@ -180,7 +180,7 @@ struct Policy_LPlusTimes<ArchLayoutT<ArchT_OpenMP, LayoutT_GDZ>> {
     KernelPolicy<
       Collapse<omp_parallel_collapse_exec, ArgList<2,0>, // Group, Direciton
         For<1, loop_exec, // Moment
-          Collapse<loop_exec, ArgList<5,4,3>, // Zones k:j:i
+          Collapse<loop_exec, ArgList<3,4,5>, // Zones k:j:i
             Lambda<0>
           >
         >
@@ -193,7 +193,7 @@ template<>
 struct Policy_LPlusTimes<ArchLayoutT<ArchT_OpenMP, LayoutT_GZD>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<2,5,4,3,0>, // Group, Zones k:j:i, Direciton
+      Collapse<omp_parallel_collapse_exec, ArgList<2,3,4,5,0>, // Group, Zones k:j:i, Direciton
         For<1, loop_exec, // Moment
           Lambda<0>
         >
@@ -205,7 +205,7 @@ template<>
 struct Policy_LPlusTimes<ArchLayoutT<ArchT_OpenMP, LayoutT_ZDG>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<5,4,3,0>, // Zones k:j:i, Direction
+      Collapse<omp_parallel_collapse_exec, ArgList<3,4,5,0>, // Zones k:j:i, Direction
         For<1, loop_exec, // Moment
           For<2, loop_exec, // Group
             Lambda<0>
@@ -221,7 +221,7 @@ template<>
 struct Policy_LPlusTimes<ArchLayoutT<ArchT_OpenMP, LayoutT_ZGD>> {
   using ExecPolicy =
     KernelPolicy<
-      Collapse<omp_parallel_collapse_exec, ArgList<5,4,3,2,0>, // Zones k:j:i, Group, Direction
+      Collapse<omp_parallel_collapse_exec, ArgList<3,4,5,2,0>, // Zones k:j:i, Group, Direction
         For<1, loop_exec, // Moment
           Lambda<0>
         >
