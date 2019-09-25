@@ -139,6 +139,25 @@ void usage(void){
     printf("                         Default: --pmethod sweep\n\n");
     
     printf("\n");
+    printf("Field Configuration:\n");
+    printf("---------------\n");
+    
+    printf("  --field f1,f2,... <bs,nb,cr,p,a>\n");
+    printf("                         Configure all listed fields (\"f1\", \"f2\", ...)\n");
+    printf("                          - bs: size of each cache block (must be 512)\n");
+    printf("                          - nb: number of block in the cache (default: 1024)\n");
+    printf("                          - cr: compression rate for ZFP\n");
+    printf("                          - p:  precision for ARC-p\n");
+    printf("                          - a:  accuracy for ARC-a\n");
+    printf("                         If a field is configured to use ZFP or ARC then the corresponding value must be non-null.\n\n");
+    printf("                         Ex: --field psi,rhs,phi,phi_out 512,1024,32,.00000000001,32\n\n");
+    
+    printf("  --pmethod <method>     Parallel solver method\n");
+    printf("                         sweep: Full up-wind sweep (wavefront algorithm)\n");
+    printf("                         bj: Block Jacobi\n");
+    printf("                         Default: --pmethod sweep\n\n");
+    
+    printf("\n");
   }
 
   Kripke::Core::Comm::finalize();
@@ -258,10 +277,6 @@ int main(int argc, char **argv) {
 #else
     printf("  OpenMP Enabled:         No\n");
 #endif
-
-
-
-
 
     /* Print out some information about how OpenMP threads are being mapped
      * to CPU cores.
@@ -395,35 +410,41 @@ int main(int argc, char **argv) {
       vars.al_v.layout_v = Kripke::stringToLayout(cmd.pop());     
     }
 #ifdef KRIPKE_USE_ZFP
-    else if(opt == "--zfp_default_rate") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_default].compression_rate = std::atof(cmd.pop().c_str());
-    }
-    else if(opt == "--zfp_default_cache") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_default].cached_blocks = std::atoi(cmd.pop().c_str());
-    }
-    else if(opt == "--zfp_psi_rate") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_psi].compression_rate = std::atof(cmd.pop().c_str());
-    }
-    else if(opt == "--zfp_psi_cache") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_psi].cached_blocks = std::atoi(cmd.pop().c_str());
-    }
-    else if(opt == "--zfp_rhs_rate") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_rhs].compression_rate = std::atof(cmd.pop().c_str());
-    }
-    else if(opt == "--zfp_rhs_cache") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_rhs].cached_blocks = std::atoi(cmd.pop().c_str());
-    }
-    else if(opt == "--zfp_phi_rate") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi].compression_rate = std::atof(cmd.pop().c_str());
-    }
-    else if(opt == "--zfp_phi_cache") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi].cached_blocks = std::atoi(cmd.pop().c_str());
-    }
-    else if(opt == "--zfp_phi_out_rate") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi_out].compression_rate = std::atof(cmd.pop().c_str());
-    }
-    else if(opt == "--zfp_phi_out_cache") {
-      vars.zfp_enabled_fields_config[InputVariables::e_zfp_field_phi_out].cached_blocks = std::atoi(cmd.pop().c_str());
+    else if(opt == "--field") {
+      std::vector<std::string> flds = split(cmd.pop(), ',');
+      std::vector<std::string> cfgs = split(cmd.pop(), ',');
+      assert(cfgs.size() == 5);
+
+      for (auto fld : flds) {
+        auto & fldcfg = ::Kripke::Config::Field::field_config_map[fld];
+
+        auto cfgit = cfgs.begin();
+        std::string cfg = *(cfgit++);
+        if (cfg != "-") {
+          fldcfg.block_size = std::atoi(cfg.c_str());
+          assert(fldcfg.block_size == 512);
+        }
+
+        cfg = *(cfgit++);
+        if (cfg != "-") {
+          fldcfg.cached_blocks = std::atoi(cfg.c_str());
+        }
+
+        cfg = *(cfgit++);
+        if (cfg != "-") {
+          fldcfg.compression_rate = std::atof(cfg.c_str());
+        }
+
+        cfg = *(cfgit++);
+        if (cfg != "-") {
+          fldcfg.precision = std::atof(cfg.c_str());
+        }
+
+        cfg = *(cfgit++);
+        if (cfg != "-") {
+          fldcfg.accuracy = std::atoi(cfg.c_str());
+        }
+      }
     }
 #endif
     else if(opt == "--compute_errors"){

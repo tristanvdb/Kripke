@@ -119,8 +119,8 @@ void Kripke::Generate::generateSpace(Kripke::Core::DataStore &data_store,
 
 
   // Create a 1d linearized set of zones
-  auto &set_zone_linear = data_store.newVariable<ProductSet<1>>("Set/ZoneLinear",
-      pspace, SPACE_R, set_zone);
+//auto &set_zone_linear = data_store.newVariable<ProductSet<1>>("Set/ZoneLinear", pspace, SPACE_R, set_zone);
+  data_store.newVariable<ProductSet<1>>("Set/ZoneLinear", pspace, SPACE_R, set_zone);
 
   // Create a set of the number of materials
   data_store.newVariable<GlobalRangeSet>("Set/Material", pspace, 3);

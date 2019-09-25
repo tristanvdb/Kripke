@@ -45,7 +45,6 @@
 using namespace Kripke;
 using namespace Kripke::Core;
 
-
 void Kripke::generateProblem(Kripke::Core::DataStore &data_store,
     InputVariables const &input_vars)
 {

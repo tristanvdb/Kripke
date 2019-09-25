@@ -93,7 +93,7 @@ struct SweepSdom {
     ZoneJ end_j((jd>0) ? local_jmax : -1);
     ZoneK end_k((kd>0) ? local_kmax : -1);
 
-    auto zone_layout = data_store.getVariable<ProductSet<3>>("Set/Zone").getLayout(sdom_id);
+//  auto zone_layout = data_store.getVariable<ProductSet<3>>("Set/Zone").getLayout(sdom_id);
 
     RAJA::kernel<ExecPolicy>(
         camp::make_tuple(

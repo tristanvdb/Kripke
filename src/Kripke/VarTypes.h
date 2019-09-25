@@ -39,6 +39,12 @@
 #include <Kripke/Core/Set.h>
 #include <Kripke/Core/Field.h>
 
+#if defined(KRIPKE_USE_ZFP)
+#  define KRIPKE_DECOUPLE_STORAGE_FROM_ELEMENTS
+#endif
+
+
+
 namespace Kripke {
 
   RAJA_INDEX_VALUE(Dimension, "Dimension");
@@ -55,42 +61,46 @@ namespace Kripke {
   RAJA_INDEX_VALUE(ZoneK, "ZoneK");
   using ZoneX = std::tuple<ZoneI,ZoneJ,ZoneK>;
 
-#if defined(KRIPKE_USE_ZFP)
+#if defined(KRIPKE_DECOUPLE_STORAGE_FROM_ELEMENTS)
 
-#if 0
-  // There is no case where replacing a whole field by a ZFP array make sense...
-  struct double_zfp : public Kripke::Core::field_storage_config {
-    using type = double;
-    constexpr static bool uses_zfp;
-  };
-#endif
-
-  // Descriptors for array of zfp array
+  // Descriptors for user-defined array:
+  //   -> Use the template `Kripke::Config::Field::Static` with the following template arguments:
+  //    - `baseT` refers to the number of dimension being excluded from the user defined array
+  //    - `engine` refers to the user-defined-array engine
   //    - `exclude` refers to the number of dimension being excluded from the user defined array
   //         -> we exclude dimension *after* the layout is applied
   //    - `fast_dims` refers to whether we put the faster or upper dimensions form the user defined array
   //         -> `fast_dims == true` => the faster dimension are used
-  struct double_zfp_exclude_2_fast : public Kripke::Core::field_storage_config {
-    using type = double;
-    constexpr static bool uses_zfp = true; // true/false does not matter... FIXME use enum of available user defined array
-    constexpr static size_t exclude = 2;
-    constexpr static bool fast_dims = true;
-  };
 
-  // Exclude: Direction & Group
-  using Field_Flux_psi = Kripke::Core::Field<double_zfp_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: SweepSubdomain+, LTimes, Population
-  using Field_Flux_rhs = Kripke::Core::Field<double_zfp_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: LPlusTime+, SweepSubdomain
+  using raw_double = Kripke::Config::Field::Static<double>;
+  using raw_double_exclude_2_fast = Kripke::Config::Field::Static<double, Kripke::Config::Field::StorageEngine::zfp, 2, true>; // TODO NIY: equivalent to `raw_double`
 
-  // Exclude: Moment & Group
-  using Field_Moments_phi     = Kripke::Core::Field<double_zfp_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: LTimes+, Scattering
-  using Field_Moments_phi_out = Kripke::Core::Field<double_zfp_exclude_2_fast, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: Scattering+, Source, LPlusTime
+#if defined(KRIPKE_USE_ZFP)
+  using zfp_double_exclude_2_fast           = Kripke::Config::Field::Static<double, Kripke::Config::Field::StorageEngine::zfp  , 2, true>;
+  using arc_accuracy_double_exclude_2_fast  = Kripke::Config::Field::Static<double, Kripke::Config::Field::StorageEngine::arc_a, 2, true>;
+  using arc_precision_double_exclude_2_fast = Kripke::Config::Field::Static<double, Kripke::Config::Field::StorageEngine::arc_p, 2, true>;
+
+  using fld_cfg_psi     = raw_double;
+  using fld_cfg_rhs     = zfp_double_exclude_2_fast;
+  using fld_cfg_phi     = arc_accuracy_double_exclude_2_fast;
+  using fld_cfg_phi_out = arc_precision_double_exclude_2_fast;
 #else
-  using Field_Flux_psi = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: SweepSubdomain+, LTimes
-  using Field_Flux_rhs = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: LPlusTime+, SweepSubdomain
-
-  using Field_Moments_phi     = Kripke::Core::Field<double, Moment, Group, ZoneI, ZoneJ, ZoneK>; // used in: LTimes+, Scattering
-  using Field_Moments_phi_out = Kripke::Core::Field<double, Moment, Group, ZoneI, ZoneJ, ZoneK>; // used in: Scattering+, Source, LPlusTime
+  using fld_cfg_psi     = raw_double;
+  using fld_cfg_rhs     = raw_double;
+  using fld_cfg_phi     = raw_double;
+  using fld_cfg_phi_out = raw_double;
 #endif
+#else
+  using fld_cfg_psi     = double;
+  using fld_cfg_rhs     = double;
+  using fld_cfg_phi     = double;
+  using fld_cfg_phi_out = double;
+#endif
+
+  using Field_Flux_psi        = Kripke::Core::Field< fld_cfg_psi,     Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: SweepSubdomain+, LTimes, Population
+  using Field_Flux_rhs        = Kripke::Core::Field< fld_cfg_rhs,     Direction, Group, ZoneI, ZoneJ, ZoneK>; // used in: LPlusTime+, SweepSubdomain
+  using Field_Moments_phi     = Kripke::Core::Field< fld_cfg_phi,     Moment,    Group, ZoneI, ZoneJ, ZoneK>; // used in: LTimes+, Scattering
+  using Field_Moments_phi_out = Kripke::Core::Field< fld_cfg_phi_out, Moment,    Group, ZoneI, ZoneJ, ZoneK>; // used in: Scattering+, Source, LPlusTime
 
   using Field_IPlane     = Kripke::Core::Field<double, Direction, Group, ZoneJ, ZoneK>;
   using Field_JPlane     = Kripke::Core::Field<double, Direction, Group, ZoneI, ZoneK>;
@@ -122,6 +132,7 @@ namespace Kripke {
   using Field_MixElem2Zone     = Kripke::Core::Field<ZoneX, MixElem>;
 
   using Field_SigmaTZonal = Kripke::Core::Field<double, Group, ZoneI, ZoneJ, ZoneK>;
+
 
   template<typename T>
   struct DefaultOrder{};
@@ -194,7 +205,6 @@ namespace Kripke {
     return SdomAL<AL>{sdom_id};
   }
 
-
   template<typename FieldType, typename SetType>
   RAJA_INLINE
   FieldType &createField(Core::DataStore &data_store, std::string const &name, ArchLayoutV al_v, SetType const &set)
@@ -203,7 +213,7 @@ namespace Kripke {
     dispatchLayout(al_v.layout_v, [&](auto layout_t){
       using order_t = typename DefaultOrder<decltype(layout_t)>::type; 
      
-      field = new FieldType(set, order_t{});
+      field = new FieldType(set, order_t{}, ::Kripke::Config::Field::field_config_map[name]);
       data_store.addVariable(name, field);
     });
 

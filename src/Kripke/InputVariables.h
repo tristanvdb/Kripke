@@ -35,6 +35,7 @@
 
 #include <Kripke.h>
 #include <Kripke/ArchLayout.h>
+#include <Kripke/VarTypes.h>
 
 /**
  * This structure defines the input parameters to setup a problem.
@@ -68,22 +69,6 @@ struct InputVariables {
   double sigt[3];               // total cross section for 3 materials
   double sigs[3];               // total scattering cross section for 3 materials
   int num_material_subsamples;  // number of subsamples in each dimension for mesh painting
-
-#ifdef KRIPKE_USE_ZFP
-  enum zfp_enabled_fields_e {
-    e_zfp_field_default = 0,
-    e_zfp_field_psi,
-    e_zfp_field_rhs,
-    e_zfp_field_phi,
-    e_zfp_field_phi_out,
-    e_zfp_field_last
-  };
-
-  struct {
-    double compression_rate;
-    size_t cached_blocks;
-  } zfp_enabled_fields_config[e_zfp_field_last];
-#endif
   
   // Output Options
   std::string run_name;         // Name to use when generating output files
