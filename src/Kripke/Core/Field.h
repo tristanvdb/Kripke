@@ -39,6 +39,7 @@
 #include <Kripke/Core/DomainVar.h>
 #include <Kripke/Core/Set.h>
 #include <vector>
+#include <numeric>
 
 #ifdef KRIPKE_USE_CHAI
 #define DEBUG
@@ -48,6 +49,7 @@
 
 #if defined(KRIPKE_USE_ZFP)
 #  define KRIPKE_DECOUPLE_STORAGE_FROM_ELEMENTS
+#  include "zfp.h"
 #  include "zfparray1.h"
 #  include "zfparray2.h"
 #  include "zfparray3.h"
@@ -88,10 +90,10 @@ namespace Field {
   struct Runtime {
 #ifdef KRIPKE_USE_ZFP
     size_t block_size{512};
-    size_t cached_blocks{1024};
-    double compression_rate{0.};
-    double precision{0.};
-    size_t accuracy{0};
+    size_t cached_blocks{4};
+    double compression_rate{32.};
+    double accuracy{1e-6};
+    size_t precision{32};
 #endif
   };
 
@@ -131,11 +133,29 @@ namespace Core {
 
     namespace ArraySelector {
 
+      template <typename arrayT>
+      void summarize_zfp(arrayT const & store, std::map<std::string, std::vector<size_t> > & statistics) {
+        statistics[ "compressed" ].push_back( store.compressed_size() );
+        statistics[ "cache"      ].push_back( store.cache_size()      );
+      }
+
+      template <typename arrayT>
+      void summarize_arc(arrayT const & store, std::map<std::string, std::vector<size_t> > & statistics) {
+        statistics[ "unused"  ].push_back( store.storage_size(ZFP_DATA_UNUSED)  );
+//      statistics[ "padding" ].push_back( store.storage_size(ZFP_DATA_PADDING) );
+        statistics[ "meta"    ].push_back( store.storage_size(ZFP_DATA_META)    );
+//      statistics[ "misc"    ].push_back( store.storage_size(ZFP_DATA_MISC)    );
+        statistics[ "payload" ].push_back( store.storage_size(ZFP_DATA_PAYLOAD) );
+        statistics[ "shape"   ].push_back( store.storage_size(ZFP_DATA_SHAPE)   );
+        statistics[ "index"   ].push_back( store.storage_size(ZFP_DATA_INDEX)   );
+        statistics[ "cache"   ].push_back( store.storage_size(ZFP_DATA_CACHE)   );
+      }
+
       template <typename ELEMENT, size_t N>
       struct ZFP;
 
       template <typename ELEMENT>
-      struct ZFP<ELEMENT, 1>{
+      struct ZFP<ELEMENT, 1> {
         using type = ::zfp::array1<ELEMENT>;
 
         static inline type * alloc(size_t size, ::Kripke::Config::Field::Runtime const & fldcfg) {
@@ -148,10 +168,12 @@ namespace Core {
           store->resize(layout.sizes[0]);
           baseptr = &((*store)[0]);
         }
+
+        static inline void summarize(type * const & store, std::map<std::string, std::vector<size_t> > & statistics) { summarize_zfp(*store, statistics); }
       };
 
       template <typename ELEMENT>
-      struct ZFP<ELEMENT, 2>{
+      struct ZFP<ELEMENT, 2> {
         using type = ::zfp::array2<ELEMENT>;
 
         static inline type * alloc(size_t size, ::Kripke::Config::Field::Runtime const & fldcfg) {
@@ -163,10 +185,12 @@ namespace Core {
         static inline void layout(type * & store, typename type::pointer & baseptr, LayoutT const & layout) {
           store->resize(layout.sizes[0], layout.sizes[1]);
         }
+
+        static inline void summarize(type * const & store, std::map<std::string, std::vector<size_t> > & statistics) { summarize_zfp(*store, statistics); }
       };
 
       template <typename ELEMENT>
-      struct ZFP<ELEMENT, 3>{
+      struct ZFP<ELEMENT, 3> {
         using type = ::zfp::array3<ELEMENT>;
 
         static inline type * alloc(size_t size, ::Kripke::Config::Field::Runtime const & fldcfg) {
@@ -179,13 +203,15 @@ namespace Core {
           store->resize(layout.sizes[0], layout.sizes[1], layout.sizes[2]);
           baseptr = &((*store)[0]);
         }
+
+        static inline void summarize(type * const & store, std::map<std::string, std::vector<size_t> > & statistics) { summarize_zfp(*store, statistics); }
       };
 
       template <typename ELEMENT, size_t N>
       struct ARC_P;
 
       template <typename ELEMENT>
-      struct ARC_P<ELEMENT, 2>{
+      struct ARC_P<ELEMENT, 2> {
         using type = ::zfp::varray2<ELEMENT>;
 
         static inline type * alloc(size_t size, ::Kripke::Config::Field::Runtime const & fldcfg) {
@@ -198,10 +224,12 @@ namespace Core {
           store->resize(layout.sizes[0], layout.sizes[1]);
           baseptr = &((*store)[0]);
         }
+
+        static inline void summarize(type * const & store, std::map<std::string, std::vector<size_t> > & statistics) { summarize_arc(*store, statistics); }
       };
 
       template <typename ELEMENT>
-      struct ARC_P<ELEMENT, 3>{
+      struct ARC_P<ELEMENT, 3> {
         using type = ::zfp::varray3<ELEMENT>;
 
         static inline type * alloc(size_t size, ::Kripke::Config::Field::Runtime const & fldcfg) {
@@ -214,13 +242,15 @@ namespace Core {
           store->resize(layout.sizes[0], layout.sizes[1], layout.sizes[2]);
           baseptr = &((*store)[0]);
         }
+
+        static inline void summarize(type * const & store, std::map<std::string, std::vector<size_t> > & statistics) { summarize_arc(*store, statistics); }
       };
 
       template <typename ELEMENT, size_t N>
       struct ARC_A;
 
       template <typename ELEMENT>
-      struct ARC_A<ELEMENT, 2>{
+      struct ARC_A<ELEMENT, 2> {
         using type = ::zfp::varray2<ELEMENT>;
 
         static inline type * alloc(size_t size, ::Kripke::Config::Field::Runtime const & fldcfg) {
@@ -233,10 +263,12 @@ namespace Core {
           store->resize(layout.sizes[0], layout.sizes[1]);
           baseptr = &((*store)[0]);
         }
+
+        static inline void summarize(type * const & store, std::map<std::string, std::vector<size_t> > & statistics) { summarize_arc(*store, statistics); }
       };
 
       template <typename ELEMENT>
-      struct ARC_A<ELEMENT, 3>{
+      struct ARC_A<ELEMENT, 3> {
         using type = ::zfp::varray3<ELEMENT>;
 
         static inline type * alloc(size_t size, ::Kripke::Config::Field::Runtime const & fldcfg) {
@@ -249,6 +281,8 @@ namespace Core {
           store->resize(layout.sizes[0], layout.sizes[1], layout.sizes[2]);
           baseptr = &((*store)[0]);
         }
+
+        static inline void summarize(type * const & store, std::map<std::string, std::vector<size_t> > & statistics) { summarize_arc(*store, statistics); }
       };
       
     }
@@ -314,6 +348,13 @@ namespace Core {
       static inline void layout(storage_pointer & store, element_pointer & baseptr, LayoutT const &, ::Kripke::Config::Field::Runtime const &) {
         baseptr = store;
       }
+
+      template <typename LayoutT>
+      static inline void summarize(storage_pointer const &, LayoutT const & layout, std::map<std::string, std::vector<size_t> > & statistics) {
+        size_t size = 1;
+        for (auto n : layout.sizes) { size *= n; }
+        statistics["size"].push_back(size);
+      }
     };
 
     // UserDefined:
@@ -372,6 +413,11 @@ namespace Core {
       static inline void layout(storage_pointer & store, element_pointer & baseptr, LayoutT const & layout, ::Kripke::Config::Field::Runtime const &) {
         static_assert(LayoutT::n_dims == N, "Sizes of the layout and storage do not match.");
         array_selector::layout(store, baseptr, layout);
+      }
+
+      template <typename LayoutT>
+      static inline void summarize(storage_pointer const & store, LayoutT const & layout, std::map<std::string, std::vector<size_t> > & statistics) {
+        array_selector::summarize(store, statistics);
       }
     };
 
@@ -441,6 +487,28 @@ namespace Core {
             store[i] = array_selector::alloc(slow_size, fldcfg);
             array_selector::layout(store[i], baseptr[i], slow_layout);
           }
+        }
+      }
+
+      template <typename LayoutT>
+      static inline void summarize(storage_pointer const & store, LayoutT const & layout, std::map<std::string, std::vector<size_t> > & statistics) {
+        utils::split_layout_t slow_layout, fast_layout;
+
+        // Split between slow and fast dimensions and compute the product of each split.
+        size_t slow_size = 1;
+        size_t fast_size = 1;
+        for (size_t i = 0; i < N; i++) {
+          if (i < view_pointer_type::num_slow_dims) {
+            slow_size *= layout.sizes[i];
+            slow_layout.sizes.push_back(layout.sizes[i]);
+          } else {
+            fast_size *= layout.sizes[i];
+            fast_layout.sizes.push_back(layout.sizes[i]);
+          }
+        }
+
+        for (size_t i = 0; i < ( config_type::fast_dims ? slow_size : fast_size ); i++) {
+          array_selector::summarize(store[i], statistics);
         }
       }
     };
@@ -821,6 +889,26 @@ namespace Core {
       }
 
 
+      RAJA_INLINE
+      void summary(size_t rank, size_t iter, size_t step) const {
+
+        std::map<std::string, std::vector<size_t> > statistics;
+        for (size_t chunk_id = 0; chunk_id < Base::m_chunk_to_data.size(); ++chunk_id) {
+          StorageHelperType::summarize(Base::m_chunk_to_data[chunk_id], m_chunk_to_layout[chunk_id], statistics);
+        }
+
+        printf("Field<%s> (r=%zd, i=%zd, s=%zd) : #c=%zd", BaseVar::getName().c_str(), rank, iter, step, Base::m_chunk_to_data.size());
+        for (auto kv : statistics) {
+          auto const & vs = kv.second;
+          const auto min_max = std::minmax_element(vs.begin(), vs.end());
+          auto mean_stddev = std::accumulate(vs.begin(), vs.end(), std::pair<float,float>(0.,0.), [](std::pair<float,float> r, size_t v){ return std::pair<float,float>(r.first + v , r.second + v * v); });
+          mean_stddev.first /= vs.size();
+          mean_stddev.second /= vs.size();
+          mean_stddev.second = std::sqrt(mean_stddev.second - mean_stddev.first * mean_stddev.first);
+          printf(" -- %s : %zd %zd %f %f", kv.first.c_str(), *(min_max.first), *(min_max.second), mean_stddev.first, mean_stddev.second);
+        }
+        printf("\n");
+      }
 
       RAJA_INLINE
       void dump() const {
@@ -842,7 +930,7 @@ namespace Core {
 
           SdomId sdom_id(Kripke::Core::DomainVar::m_chunk_to_subdomain[chunk_id]);
 
-          ElementType *ptr = Base::getData(sdom_id);
+          StoragePtr ptr = Base::getData(sdom_id);
 
           printf("Chunk %d Data: ", (int)chunk_id);
           for(size_t i = 0;i < Base::Base::m_chunk_to_size[chunk_id];++ i){

@@ -43,6 +43,13 @@
 
 using namespace Kripke::Core;
 
+void fields_summary(Kripke::Core::DataStore &data_store, size_t rank, size_t iter, size_t step) {
+  data_store.getVariable<Kripke::Field_Flux_psi       >("psi"    ).summary(rank, iter, step);
+  data_store.getVariable<Kripke::Field_Flux_rhs       >("rhs"    ).summary(rank, iter, step);
+  data_store.getVariable<Kripke::Field_Moments_phi    >("phi"    ).summary(rank, iter, step);
+  data_store.getVariable<Kripke::Field_Moments_phi_out>("phi_out").summary(rank, iter, step);
+}
+
 /**
   Run solver iterations.
 */
@@ -59,47 +66,41 @@ int Kripke::SteadyStateSolver (Kripke::Core::DataStore &data_store, size_t max_i
     printf("==================\n\n");
   }
 
-
   // Intialize unknowns
   Kripke::Kernel::kConst(data_store.getVariable<Kripke::Field_Flux_psi>("psi"), 0.0);
 
+  fields_summary(data_store, comm.rank(), 0, 0);
 
   // Loop over iterations
   double part_last = 0.0;
   for(size_t iter = 0;iter < max_iter;++ iter){
 
-
     /*
      * Compute the RHS:  rhs = LPlus*S*L*psi + Q
      */
-
 
     // Discrete to Moments transformation (phi = L*psi)
     Kripke::Kernel::kConst(data_store.getVariable<Field_Moments_phi>("phi"), 0.0);
     Kripke::Kernel::LTimes(data_store);
 
-
+    fields_summary(data_store, comm.rank(), iter, 1);
 
     // Compute Scattering Source Term (psi_out = S*phi)
     Kripke::Kernel::kConst(data_store.getVariable<Kripke::Field_Moments_phi_out>("phi_out"), 0.0);
     Kripke::Kernel::scattering(data_store);
 
-
+    fields_summary(data_store, comm.rank(), iter, 2);
 
     // Compute External Source Term (psi_out = psi_out + Q)
     Kripke::Kernel::source(data_store);
 
-
+    fields_summary(data_store, comm.rank(), iter, 3);
 
     // Moments to Discrete transformation (rhs = LPlus*psi_out)
     Kripke::Kernel::kConst(data_store.getVariable<Kripke::Field_Flux_rhs>("rhs"), 0.0);
     Kripke::Kernel::LPlusTimes(data_store);
 
-
-
-
-
-
+    fields_summary(data_store, comm.rank(), iter, 4);
 
     /*
      * Sweep (psi = Hinv*rhs)
@@ -116,21 +117,21 @@ int Kripke::SteadyStateSolver (Kripke::Core::DataStore &data_store, size_t max_i
       Kripke::SweepSolver(data_store, sdom_list, block_jacobi);
     }
 
-
+    fields_summary(data_store, comm.rank(), iter, 5);
 
     /*
      * Population edit and convergence test
      */
     double part = Kripke::Kernel::population(data_store);
     if(comm.rank() == 0){
-      printf("  iter %d: particle count=%e, change=%e\n", (int)iter, part, (part-part_last)/part);
+      printf("  iter %zd: particle count=%e, change=%e\n", iter, part, (part-part_last)/part);
       fflush(stdout);
     }
     part_last = part;
 
-
-
   }
+
+  fields_summary(data_store, comm.rank(), max_iter, 6);
 
   if (compute_errors)
     Kripke::Kernel::error_norms(data_store);

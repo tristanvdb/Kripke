@@ -141,17 +141,18 @@ void usage(void){
     printf("\n");
     printf("Field Configuration:\n");
     printf("---------------\n");
-    
+#ifdef KRIPKE_USE_ZFP
     printf("  --field f1,f2,... <bs,nb,cr,p,a>\n");
     printf("                         Configure all listed fields (\"f1\", \"f2\", ...)\n");
     printf("                          - bs: size of each cache block (must be 512)\n");
     printf("                          - nb: number of block in the cache (default: 1024)\n");
-    printf("                          - cr: compression rate for ZFP\n");
-    printf("                          - p:  precision for ARC-p\n");
-    printf("                          - a:  accuracy for ARC-a\n");
-    printf("                         If a field is configured to use ZFP or ARC then the corresponding value must be non-null.\n\n");
-    printf("                         Ex: --field psi,rhs,phi,phi_out 512,1024,32,.00000000001,32\n\n");
-    
+    printf("                          - cr: compression rate for ZFP (expect double, default: 32)\n");
+    printf("                          - p:  precision for ARC-p (expect integer, default: 32)\n");
+    printf("                          - a:  accuracy for ARC-a (expect double, default: 1e-6)\n");
+    printf("                         If a field is configured to use ZFP or ARC then the corresponding value must be non-null.\n");
+    printf("                         This option can be applied multiple time to configure different field (if a field configuration is set multiple time last configuration is used).\n");
+    printf("                         Ex: --field psi,rhs 512,1024,32,32,.00000000001 --field phi,phi_out 512,-,-,,23.00001\n\n");
+#endif
     printf("  --pmethod <method>     Parallel solver method\n");
     printf("                         sweep: Full up-wind sweep (wavefront algorithm)\n");
     printf("                         bj: Block Jacobi\n");
@@ -437,12 +438,12 @@ int main(int argc, char **argv) {
 
         cfg = *(cfgit++);
         if (cfg != "-") {
-          fldcfg.precision = std::atof(cfg.c_str());
+          fldcfg.precision = std::atoi(cfg.c_str());
         }
 
         cfg = *(cfgit++);
         if (cfg != "-") {
-          fldcfg.accuracy = std::atoi(cfg.c_str());
+          fldcfg.accuracy = std::atof(cfg.c_str());
         }
       }
     }
